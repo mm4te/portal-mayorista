@@ -276,6 +276,27 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .pedido-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
+/* ── Selección / instrucciones de pago ───────────────────────────────────── */
+.pago-box {
+  margin-top: 20px;
+  padding: 18px 20px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: var(--radius-md);
+}
+.pago-box h2 { margin-bottom: 12px; color: #3730a3; }
+.pago-box p { margin-bottom: 8px; }
+.pago-opciones { display: flex; gap: 12px; flex-wrap: wrap; }
+.pago-opciones .btn { flex: 1; min-width: 160px; background: #fff; }
+.pago-dato {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--heading);
+}
+.pago-datos { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 10px 0 14px; }
+.pago-datos dt { font-weight: 700; color: var(--text-muted); }
+.pago-datos dd { font-weight: 600; color: var(--heading); }
+
 @media (max-width: 560px) {
   .topbar-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
   .card { padding: 20px; }

@@ -318,3 +318,156 @@ def get_pedido_items(pedido_id):
         ).fetchall()
     finally:
         conn.close()
+
+
+# ── Gestión de pedidos (consumida por la API interna, desde comenda-sistema) ──
+
+# Estados que el sistema principal todavía tiene que atender.
+ESTADOS_PENDIENTES = ("enviado", "confirmando_stock", "confirmado_esperando_pago")
+
+
+def listar_pedidos_pendientes():
+    conn = get_conn()
+    try:
+        return conn.execute(
+            "SELECT p.*, c.nombre_empresa, c.cuit, c.telefono, c.email "
+            "FROM pedidos_mayoristas p "
+            "JOIN clientes_mayoristas c ON c.id = p.cliente_mayorista_id "
+            "WHERE p.estado IN ({}) "
+            "ORDER BY p.id".format(",".join("?" * len(ESTADOS_PENDIENTES))),
+            ESTADOS_PENDIENTES
+        ).fetchall()
+    finally:
+        conn.close()
+
+
+def get_pedido_con_cliente(pedido_id):
+    conn = get_conn()
+    try:
+        return conn.execute(
+            "SELECT p.*, c.nombre_empresa, c.cuit, c.telefono, c.email "
+            "FROM pedidos_mayoristas p "
+            "JOIN clientes_mayoristas c ON c.id = p.cliente_mayorista_id "
+            "WHERE p.id = ?",
+            (pedido_id,)
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def registrar_verificacion_stock(pedido_id, detalle):
+    """detalle: [{'sku', 'disponible'}]. Marca disponible_confirmado por ítem
+    y pasa el pedido a 'confirmando_stock'. Solo aplica si el pedido está en
+    'enviado' o 'confirmando_stock' (no pisa un pedido ya pagado/cancelado)."""
+    disp = {d["sku"]: (1 if d.get("disponible") else 0) for d in (detalle or [])}
+    conn = get_conn()
+    try:
+        row = conn.execute(
+            "SELECT estado FROM pedidos_mayoristas WHERE id = ?", (pedido_id,)
+        ).fetchone()
+        if row is None:
+            return False, "Pedido no encontrado"
+        if row["estado"] not in ("enviado", "confirmando_stock"):
+            return False, f"El pedido está en estado '{row['estado']}'"
+        for sku, val in disp.items():
+            conn.execute(
+                "UPDATE pedido_mayorista_items SET disponible_confirmado = ? "
+                "WHERE pedido_id = ? AND sku = ?",
+                (val, pedido_id, sku)
+            )
+        conn.execute(
+            "UPDATE pedidos_mayoristas SET estado = 'confirmando_stock' WHERE id = ?",
+            (pedido_id,)
+        )
+        conn.commit()
+        return True, None
+    finally:
+        conn.close()
+
+
+def marcar_pedido_confirmado(pedido_id):
+    conn = get_conn()
+    try:
+        row = conn.execute(
+            "SELECT estado FROM pedidos_mayoristas WHERE id = ?", (pedido_id,)
+        ).fetchone()
+        if row is None:
+            return False, "Pedido no encontrado"
+        if row["estado"] not in ("enviado", "confirmando_stock"):
+            return False, f"El pedido está en estado '{row['estado']}'"
+        conn.execute(
+            "UPDATE pedidos_mayoristas SET estado = 'confirmado_esperando_pago', "
+            "fecha_confirmacion = ? WHERE id = ?",
+            (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), pedido_id)
+        )
+        conn.commit()
+        return True, None
+    finally:
+        conn.close()
+
+
+def marcar_pedido_rechazado_sin_stock(pedido_id):
+    conn = get_conn()
+    try:
+        row = conn.execute(
+            "SELECT estado FROM pedidos_mayoristas WHERE id = ?", (pedido_id,)
+        ).fetchone()
+        if row is None:
+            return False, "Pedido no encontrado"
+        if row["estado"] in ("pagado", "cancelado"):
+            return False, f"El pedido está en estado '{row['estado']}'"
+        conn.execute(
+            "UPDATE pedidos_mayoristas SET estado = 'rechazado_sin_stock' WHERE id = ?",
+            (pedido_id,)
+        )
+        conn.commit()
+        return True, None
+    finally:
+        conn.close()
+
+
+def marcar_pedido_pagado(pedido_id, venta_sistema_id):
+    conn = get_conn()
+    try:
+        row = conn.execute(
+            "SELECT estado FROM pedidos_mayoristas WHERE id = ?", (pedido_id,)
+        ).fetchone()
+        if row is None:
+            return False, "Pedido no encontrado"
+        if row["estado"] == "pagado":
+            return True, None  # idempotente
+        if row["estado"] != "confirmado_esperando_pago":
+            return False, f"El pedido está en estado '{row['estado']}'"
+        conn.execute(
+            "UPDATE pedidos_mayoristas SET estado = 'pagado', venta_sistema_id = ? WHERE id = ?",
+            (venta_sistema_id, pedido_id)
+        )
+        conn.commit()
+        return True, None
+    finally:
+        conn.close()
+
+
+def elegir_metodo_pago(pedido_id, cliente_id, metodo):
+    """El cliente elige efectivo/transferencia. El estado sigue en
+    'confirmado_esperando_pago' hasta que Comenda confirme el pago."""
+    if metodo not in ("efectivo", "transferencia"):
+        return False, "Método inválido"
+    conn = get_conn()
+    try:
+        row = conn.execute(
+            "SELECT estado FROM pedidos_mayoristas WHERE id = ? AND cliente_mayorista_id = ?",
+            (pedido_id, cliente_id)
+        ).fetchone()
+        if row is None:
+            return False, "Pedido no encontrado"
+        if row["estado"] != "confirmado_esperando_pago":
+            return False, "El pedido todavía no está confirmado"
+        conn.execute(
+            "UPDATE pedidos_mayoristas SET metodo_pago_elegido = ? WHERE id = ?",
+            (metodo, pedido_id)
+        )
+        conn.commit()
+        return True, None
+    finally:
+        conn.close()
