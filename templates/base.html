@@ -20,7 +20,7 @@
           <a href="{{ url_for('auth.logout') }}">Salir</a>
           <a href="{{ url_for('carrito.ver') }}" class="carrito-icono-btn" aria-label="Carrito">
             <i class="bi bi-cart3"></i>
-            {% if carrito_count %}<span class="carrito-badge">{{ carrito_count }}</span>{% endif %}
+            <span class="carrito-badge" style="display: {{ 'flex' if carrito_count else 'none' }};">{{ carrito_count }}</span>
           </a>
         {% else %}
           <a href="{{ url_for('auth.login') }}">Ingresar</a>

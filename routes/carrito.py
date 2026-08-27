@@ -2,7 +2,7 @@
 import logging
 
 from flask import (
-    Blueprint, render_template, request, redirect, url_for, flash, g
+    Blueprint, render_template, request, redirect, url_for, flash, g, jsonify
 )
 
 from routes import login_required
@@ -14,6 +14,29 @@ from models import crear_pedido_enviado
 logger = logging.getLogger(__name__)
 
 carrito_bp = Blueprint("carrito", __name__)
+
+
+def _payload():
+    """Lee sku/cantidad tanto de JSON como de form (los endpoints del carrito
+    se usan vía fetch, pero aceptar form no cuesta nada)."""
+    data = request.get_json(silent=True) or request.form or {}
+    sku = (str(data.get("sku") or "")).strip()
+    try:
+        cantidad = int(data.get("cantidad", 1))
+    except (TypeError, ValueError):
+        cantidad = 1
+    return sku, cantidad
+
+
+def _estado_carrito(extra=None):
+    resp = {
+        "ok": True,
+        "total_items": cart.carrito_count(),
+        "total": cart.total_carrito(),
+    }
+    if extra:
+        resp.update(extra)
+    return jsonify(resp)
 
 
 @carrito_bp.route("/carrito")
@@ -29,53 +52,48 @@ def ver():
 @carrito_bp.route("/carrito/agregar", methods=["POST"])
 @login_required
 def agregar():
-    sku = (request.form.get("sku") or "").strip()
-    try:
-        cantidad = int(request.form.get("cantidad", 1))
-    except ValueError:
-        cantidad = 1
-
+    sku, cantidad = _payload()
+    cantidad = max(1, min(99, cantidad))
     if not sku:
-        flash("Producto inválido.", "error")
-        return redirect(url_for("catalogo.index"))
+        return jsonify({"ok": False, "error": "Producto inválido."}), 400
 
     # Nombre y precio autoritativos: se resuelven contra el catálogo del
-    # sistema principal, no desde el formulario (evita manipulación de precios).
+    # sistema principal, no desde el cliente (evita manipulación de precios).
     try:
         prod = comenda_api_client.buscar_en_catalogo(sku)
     except ComendaAPIError as e:
-        flash(f"No se pudo verificar el producto: {e}", "error")
-        return redirect(url_for("catalogo.index"))
+        logger.warning("agregar al carrito: %s", e)
+        return jsonify({"ok": False, "error": "No se pudo contactar al sistema. Probá de nuevo."}), 502
 
     if not prod:
-        flash("El producto ya no está disponible en el catálogo.", "error")
-        return redirect(url_for("catalogo.index"))
+        return jsonify({"ok": False, "error": "El producto ya no está en el catálogo."}), 404
     if not prod.get("disponible"):
-        flash(f"«{prod['nombre']}» está sin stock.", "error")
-        return redirect(url_for("catalogo.index"))
+        return jsonify({"ok": False, "error": f"«{prod['nombre']}» está sin stock."}), 409
 
     cart.agregar(sku, prod["nombre"], prod["precio_mayorista"], cantidad)
-    flash(f"«{prod['nombre']}» agregado al carrito.", "success")
-    return redirect(request.referrer or url_for("catalogo.index"))
+    return _estado_carrito({"nombre": prod["nombre"]})
 
 
 @carrito_bp.route("/carrito/actualizar", methods=["POST"])
 @login_required
 def actualizar():
-    sku = (request.form.get("sku") or "").strip()
-    try:
-        cantidad = int(request.form.get("cantidad", 1))
-    except ValueError:
-        cantidad = 1
+    sku, cantidad = _payload()
+    if not sku:
+        return jsonify({"ok": False, "error": "Ítem inválido."}), 400
+    cantidad = max(0, min(99, cantidad))
     cart.actualizar_cantidad(sku, cantidad)
-    return redirect(url_for("carrito.ver"))
+    sub = next(
+        (i["precio"] * i["cantidad"] for i in cart.get_carrito() if i["sku"] == sku), 0
+    )
+    return _estado_carrito({"item_subtotal": sub, "removido": cantidad <= 0})
 
 
 @carrito_bp.route("/carrito/quitar", methods=["POST"])
 @login_required
 def quitar():
-    cart.quitar((request.form.get("sku") or "").strip())
-    return redirect(url_for("carrito.ver"))
+    sku, _ = _payload()
+    cart.quitar(sku)
+    return _estado_carrito({"removido": True})
 
 
 @carrito_bp.route("/carrito/enviar", methods=["POST"])

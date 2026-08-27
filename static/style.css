@@ -271,7 +271,12 @@ input:focus, textarea:focus, select:focus {
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   background: #fff;
+  display: flex;
+  flex-direction: column;
 }
+/* El botón de agregar queda pegado al fondo aunque la card no tenga selector */
+.producto-card-mayorista .btn-agregar-carrito { margin-top: auto; }
+.producto-card-mayorista .mini-badge { align-self: flex-start; }
 .producto-card-mayorista img,
 .producto-card-mayorista .img-vacia {
   width: 100%;
@@ -318,22 +323,70 @@ input:focus, textarea:focus, select:focus {
 .mini-badge.disp { background: #d4edda; color: #155724; }
 .mini-badge.sin  { background: #e9ecef; color: #6c757d; }
 
-.card-add { position: absolute; top: 14px; right: 14px; }
-.btn-add {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: none;
-  background: var(--primary);
-  color: #fff;
-  font-size: 0.95rem;
+/* Selector de cantidad (card del catálogo y filas del carrito) */
+.selector-cantidad {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0;
+}
+.selector-cantidad button {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-size: 1rem;
+  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  font-family: inherit;
+  color: var(--dark);
 }
-.btn-add:hover { background: var(--primary-dark); }
+.selector-cantidad button:hover { background: #f3f4f6; }
+.input-cantidad {
+  width: 42px;
+  text-align: center;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 2px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.input-cantidad::-webkit-inner-spin-button,
+.input-cantidad::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.btn-agregar-carrito {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-agregar-carrito:hover { background: var(--primary-dark); }
+.btn-agregar-carrito:disabled {
+  background: #e9ecef;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+.btn-agregar-carrito.agregado { background: var(--success); }
 
 .badge-disponible { background: #d4edda; color: #155724; }
 .badge-sinstock   { background: #e9ecef; color: #6c757d; }

@@ -11,7 +11,7 @@
   </div>
 {% else %}
 <div class="card carrito-card">
-  <table class="carrito-tabla">
+  <table class="carrito-tabla" id="carrito-tabla">
     <thead>
       <tr>
         <th>Producto</th>
@@ -23,27 +23,24 @@
     </thead>
     <tbody>
       {% for i in items %}
-      <tr>
+      <tr data-sku="{{ i.sku }}">
         <td>
           <strong>{{ i.nombre }}</strong><br>
           <span class="sku">{{ i.sku }}</span>
         </td>
         <td>$ {{ i.precio | pesos }}</td>
         <td>
-          <form method="POST" action="{{ url_for('carrito.actualizar') }}" class="qty-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="sku" value="{{ i.sku }}">
-            <input type="number" name="cantidad" value="{{ i.cantidad }}" min="1">
-            <button type="submit" class="btn-mini">Actualizar</button>
-          </form>
+          <div class="selector-cantidad">
+            <button type="button" onclick="cambiarCantidadCarrito(this, -1)" aria-label="Restar">−</button>
+            <input type="number" class="input-cantidad" value="{{ i.cantidad }}" min="1" max="99"
+                   onchange="actualizarItem(this)" aria-label="Cantidad">
+            <button type="button" onclick="cambiarCantidadCarrito(this, 1)" aria-label="Sumar">+</button>
+          </div>
         </td>
-        <td>$ {{ (i.precio * i.cantidad) | pesos }}</td>
+        <td class="col-subtotal">$ {{ (i.precio * i.cantidad) | pesos }}</td>
         <td>
-          <form method="POST" action="{{ url_for('carrito.quitar') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="sku" value="{{ i.sku }}">
-            <button type="submit" class="btn-mini btn-mini-danger">Quitar</button>
-          </form>
+          <button type="button" class="btn-mini btn-mini-danger"
+                  onclick="quitarItem(this)">Quitar</button>
         </td>
       </tr>
       {% endfor %}
@@ -51,7 +48,7 @@
     <tfoot>
       <tr>
         <td colspan="3" class="total-label">Total</td>
-        <td colspan="2" class="total-value">$ {{ total | pesos }}</td>
+        <td colspan="2" class="total-value" id="carrito-total">$ {{ total | pesos }}</td>
       </tr>
     </tfoot>
   </table>
@@ -64,4 +61,79 @@
   </form>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function getCsrfToken() {
+    var m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.getAttribute('content') : '';
+  }
+
+  function fmtPesos(valor) {
+    var n = (Number(valor) || 0).toFixed(2);
+    var partes = n.split('.');
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return '$ ' + partes[0] + ',' + partes[1];
+  }
+
+  function actualizarBadgeCarrito(cantidad) {
+    var badge = document.querySelector('.carrito-badge');
+    if (!badge) return;
+    if (cantidad > 0) { badge.textContent = cantidad; badge.style.display = 'flex'; }
+    else { badge.style.display = 'none'; }
+  }
+
+  function _postCarrito(url, sku, cantidad) {
+    var body = { sku: sku };
+    if (cantidad != null) body.cantidad = cantidad;
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); });
+  }
+
+  function cambiarCantidadCarrito(btn, delta) {
+    var input = btn.parentElement.querySelector('.input-cantidad');
+    var valor = parseInt(input.value, 10) || 1;
+    input.value = Math.max(1, Math.min(99, valor + delta));
+    actualizarItem(input);
+  }
+
+  function actualizarItem(input) {
+    var fila = input.closest('tr');
+    var sku = fila.dataset.sku;
+    var cantidad = Math.max(1, Math.min(99, parseInt(input.value, 10) || 1));
+    input.value = cantidad;
+
+    _postCarrito("{{ url_for('carrito.actualizar') }}", sku, cantidad)
+      .then(function (res) {
+        if (!res.data || !res.data.ok) {
+          alert((res.data && res.data.error) || 'No se pudo actualizar.');
+          return;
+        }
+        fila.querySelector('.col-subtotal').textContent = fmtPesos(res.data.item_subtotal);
+        document.getElementById('carrito-total').textContent = fmtPesos(res.data.total);
+        actualizarBadgeCarrito(res.data.total_items);
+      })
+      .catch(function () { alert('No se pudo actualizar. Revisá tu conexión.'); });
+  }
+
+  function quitarItem(btn) {
+    var fila = btn.closest('tr');
+    _postCarrito("{{ url_for('carrito.quitar') }}", fila.dataset.sku, null)
+      .then(function (res) {
+        if (!res.data || !res.data.ok) {
+          alert((res.data && res.data.error) || 'No se pudo quitar el ítem.');
+          return;
+        }
+        fila.remove();
+        actualizarBadgeCarrito(res.data.total_items);
+        if (res.data.total_items <= 0) { window.location.reload(); return; }
+        document.getElementById('carrito-total').textContent = fmtPesos(res.data.total);
+      })
+      .catch(function () { alert('No se pudo quitar el ítem. Revisá tu conexión.'); });
+  }
+</script>
 {% endblock %}
