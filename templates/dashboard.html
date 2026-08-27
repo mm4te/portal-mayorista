@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Inicio · Portal Mayorista{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Hola, {{ cliente.nombre_empresa }}</h1>
+  <p class="subtitle">Tu cuenta mayorista está activa.</p>
+  <p class="note">
+    El catálogo y el carrito de compras se habilitan en la próxima etapa.
+    Cuando estén listos vas a poder armar pedidos y enviarlos para revisión.
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,176 @@
+/* static/style.css — Portal Mayorista
+   Paleta y tipografía alineadas con comenda-sistema para consistencia de marca. */
+
+:root {
+  --primary: #4361ee;
+  --primary-dark: #3a56d4;
+  --success: #2ecc71;
+  --danger: #e63946;
+  --light: #f8f9fa;
+  --dark: #212529;
+  --gray: #6c757d;
+  --border: #dee2e6;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --heading: #111827;
+  --text-muted: #6b7280;
+  --border-soft: #e5e7eb;
+  --border-input: #d1d5db;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { max-width: 100%; overflow-x: hidden; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--dark);
+  background: var(--light);
+  line-height: 1.5;
+}
+
+img, svg { max-width: 100%; }
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Topbar ──────────────────────────────────────────────────────────────── */
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+}
+.topbar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.brand {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--heading);
+}
+.brand span { color: var(--primary); }
+.topbar-nav { display: flex; align-items: center; gap: 18px; }
+.topbar-nav a { color: var(--gray); font-weight: 600; font-size: 0.9rem; }
+.topbar-nav a:hover { color: var(--primary); text-decoration: none; }
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+.narrow { max-width: 460px; }
+
+.card {
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 28px;
+}
+
+h1 { font-size: 1.5rem; color: var(--heading); margin-bottom: 6px; }
+h2 { font-size: 1.15rem; color: var(--heading); margin-bottom: 14px; }
+.subtitle { color: var(--text-muted); margin-bottom: 22px; }
+
+/* ── Formularios ─────────────────────────────────────────────────────────── */
+form.stack { display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+label { font-weight: 600; font-size: 0.85rem; color: var(--dark); }
+input[type="text"], input[type="email"], input[type="password"], input[type="tel"],
+textarea, select {
+  padding: 10px 12px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.12);
+  outline: none;
+}
+.hint { font-size: 0.78rem; color: var(--text-muted); }
+
+.btn {
+  display: inline-block;
+  padding: 11px 18px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.btn:hover { background: var(--primary-dark); text-decoration: none; }
+.btn-block { width: 100%; }
+.btn-ghost {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+.btn-ghost:hover { background: rgba(67, 97, 238, 0.06); }
+.btn-danger { background: var(--danger); }
+.btn-danger:hover { background: #c92f3b; }
+
+.form-foot {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+/* ── Flash messages ──────────────────────────────────────────────────────── */
+.flash-messages { margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
+.flash-messages p {
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.flash-messages .success { background: #d4edda; color: #155724; }
+.flash-messages .error   { background: #f8d7da; color: #721c24; }
+.flash-messages .info    { background: #cce5ff; color: #004085; }
+.flash-messages .warning { background: #fff3cd; color: #856404; }
+
+/* ── Badges de estado ────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.badge-pendiente_aprobacion { background: #fff3cd; color: #856404; }
+.badge-aprobado  { background: #d4edda; color: #155724; }
+.badge-rechazado { background: #f8d7da; color: #721c24; }
+.badge-suspendido { background: #e9ecef; color: #495057; }
+
+/* ── Estados vacíos / notas ──────────────────────────────────────────────── */
+.note {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 560px) {
+  .topbar-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .card { padding: 20px; }
+}

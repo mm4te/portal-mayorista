@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Portal Mayorista · Comenda{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="{{ url_for('home') }}">Comenda <span>Mayorista</span></a>
+      <nav class="topbar-nav">
+        {% if g.cliente_id %}
+          <a href="{{ url_for('catalogo.index') }}">Catálogo</a>
+          <a href="{{ url_for('carrito.ver') }}">Carrito</a>
+          <a href="{{ url_for('pedidos.lista') }}">Mis pedidos</a>
+          <a href="{{ url_for('auth.logout') }}">Salir</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}">Ingresar</a>
+          <a href="{{ url_for('auth.registro') }}">Crear cuenta</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="page {% block page_class %}{% endblock %}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <p class="{{ category }}">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

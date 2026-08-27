@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Ingresar · Portal Mayorista{% endblock %}
+{% block page_class %}narrow{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Ingresar</h1>
+  <p class="subtitle">Portal de compras mayoristas de Comenda.</p>
+
+  <form method="POST" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" value="{{ email or '' }}" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" name="password" required>
+    </div>
+    <button type="submit" class="btn btn-block">Ingresar</button>
+  </form>
+
+  <p class="form-foot">
+    ¿No tenés cuenta? <a href="{{ url_for('auth.registro') }}">Registrate</a>
+  </p>
+</div>
+{% endblock %}

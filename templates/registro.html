@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Crear cuenta · Portal Mayorista{% endblock %}
+{% block page_class %}narrow{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Crear cuenta mayorista</h1>
+  <p class="subtitle">
+    Completá tus datos. Revisamos cada solicitud antes de habilitar el acceso.
+  </p>
+
+  <form method="POST" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="nombre_empresa">Nombre de la empresa *</label>
+      <input type="text" id="nombre_empresa" name="nombre_empresa"
+             value="{{ form.nombre_empresa or '' }}" required autofocus>
+    </div>
+    <div class="field">
+      <label for="cuit">CUIT</label>
+      <input type="text" id="cuit" name="cuit" value="{{ form.cuit or '' }}"
+             placeholder="30-12345678-9" inputmode="numeric">
+      <span class="hint">Opcional, pero lo vas a necesitar para facturar.</span>
+    </div>
+    <div class="field">
+      <label for="telefono">Teléfono</label>
+      <input type="tel" id="telefono" name="telefono" value="{{ form.telefono or '' }}">
+    </div>
+    <div class="field">
+      <label for="email">Email *</label>
+      <input type="email" id="email" name="email" value="{{ form.email or '' }}" required>
+    </div>
+    <div class="field">
+      <label for="password">Contraseña *</label>
+      <input type="password" id="password" name="password" required minlength="8">
+      <span class="hint">Mínimo 8 caracteres.</span>
+    </div>
+    <div class="field">
+      <label for="password2">Repetir contraseña *</label>
+      <input type="password" id="password2" name="password2" required minlength="8">
+    </div>
+    <button type="submit" class="btn btn-block">Crear cuenta</button>
+  </form>
+
+  <p class="form-foot">
+    ¿Ya tenés cuenta? <a href="{{ url_for('auth.login') }}">Ingresá</a>
+  </p>
+</div>
+{% endblock %}

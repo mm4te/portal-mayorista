@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Cuenta creada · Portal Mayorista{% endblock %}
+{% block page_class %}narrow{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>¡Cuenta creada!</h1>
+  <p class="note">
+    Tu cuenta está <strong>pendiente de aprobación</strong>. Te contactaremos pronto
+    para habilitarte el acceso al catálogo mayorista.
+  </p>
+  <p class="form-foot" style="margin-top:18px;">
+    <a href="{{ url_for('auth.login') }}">Volver al inicio</a>
+  </p>
+</div>
+{% endblock %}
