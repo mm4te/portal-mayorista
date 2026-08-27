@@ -296,6 +296,8 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .pago-datos { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 10px 0 14px; }
 .pago-datos dt { font-weight: 700; color: var(--text-muted); }
 .pago-datos dd { font-weight: 600; color: var(--heading); }
+.cambiar-pago-link { margin-top: 14px; font-size: 0.85rem; }
+.cambiar-pago-link a { color: var(--text-muted); text-decoration: underline; }
 
 @media (max-width: 560px) {
   .topbar-inner { flex-direction: column; align-items: flex-start; gap: 10px; }

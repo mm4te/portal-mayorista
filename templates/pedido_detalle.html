@@ -51,14 +51,17 @@
     <div class="note">Pedido pagado y facturado. ¡Gracias!</div>
 
   {% elif pedido.estado == 'confirmado_esperando_pago' %}
-    {% if not pedido.metodo_pago_elegido %}
+    {% if not pedido.metodo_pago_elegido or cambiar_pago %}
       <div class="pago-box">
-        <h2>Elegí tu método de pago</h2>
+        <h2>{{ 'Cambiá tu método de pago' if pedido.metodo_pago_elegido else 'Elegí tu método de pago' }}</h2>
         <form method="POST" action="{{ url_for('pedidos.elegir_pago', pedido_id=pedido.id) }}" class="pago-opciones">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" name="metodo" value="efectivo" class="btn btn-ghost">💵 Efectivo</button>
           <button type="submit" name="metodo" value="transferencia" class="btn btn-ghost">🏦 Transferencia</button>
         </form>
+        {% if cambiar_pago %}
+          <p style="margin-top:10px;"><a href="{{ url_for('pedidos.detalle', pedido_id=pedido.id) }}">Cancelar</a></p>
+        {% endif %}
       </div>
 
     {% elif pedido.metodo_pago_elegido == 'efectivo' %}
@@ -67,6 +70,9 @@
         <p>📍 Retirá o coordiná la entrega en:</p>
         <p class="pago-dato">{{ datos_pago.efectivo_direccion }}</p>
         <p>Presentate con el número de pedido <strong>{{ pedido.numero }}</strong> para abonar.</p>
+        <p class="cambiar-pago-link">
+          <a href="{{ url_for('pedidos.detalle', pedido_id=pedido.id, cambiar=1) }}">Cambiar método de pago</a>
+        </p>
       </div>
 
     {% elif pedido.metodo_pago_elegido == 'transferencia' %}
@@ -86,6 +92,9 @@
           Una vez hecha la transferencia, enviá el comprobante
           {% if datos_pago.contacto_comprobante %}a <strong>{{ datos_pago.contacto_comprobante }}</strong>{% else %}a nuestro contacto habitual{% endif %},
           indicando el pedido <strong>{{ pedido.numero }}</strong>.
+        </p>
+        <p class="cambiar-pago-link">
+          <a href="{{ url_for('pedidos.detalle', pedido_id=pedido.id, cambiar=1) }}">Cambiar método de pago</a>
         </p>
       </div>
     {% endif %}

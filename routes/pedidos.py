@@ -51,10 +51,12 @@ def detalle(pedido_id):
     if pedido is None:
         abort(404)
     items = get_pedido_items(pedido_id)
+    # ?cambiar=1 → volver a mostrar las opciones de pago aunque ya haya una elegida
+    cambiar_pago = request.args.get("cambiar") == "1"
     return render_template(
         "pedido_detalle.html",
         pedido=pedido, items=items, estado_label=ESTADO_LABEL,
-        datos_pago=_datos_pago(),
+        datos_pago=_datos_pago(), cambiar_pago=cambiar_pago,
     )
 
 

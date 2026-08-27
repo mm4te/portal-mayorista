@@ -567,7 +567,7 @@ def marcar_pedido_pagado(pedido_id, venta_sistema_id, usuario=None):
         conn.close()
 
 
-def elegir_metodo_pago(pedido_id, cliente_id, metodo, cambio=False):
+def elegir_metodo_pago(pedido_id, cliente_id, metodo):
     """El cliente elige (o cambia) efectivo/transferencia. El estado sigue en
     'confirmado_esperando_pago' hasta que Comenda confirme el pago."""
     if metodo not in ("efectivo", "transferencia"):
