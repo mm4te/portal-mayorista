@@ -16,14 +16,20 @@ catalogo_bp = Blueprint("catalogo", __name__)
 @login_required
 def index():
     q = (request.args.get("q") or "").strip()
+    categoria = (request.args.get("categoria") or "").strip()
 
     error = None
     productos = []
+    categorias = []
     try:
         productos = comenda_api_client.get_catalogo()
+        categorias = comenda_api_client.get_categorias()
     except ComendaAPIError as e:
         error = str(e)
         logger.warning("catalogo: %s", e)
+
+    if categoria and categoria.lower() != "todas":
+        productos = [p for p in productos if (p.get("categoria") or "") == categoria]
 
     if q:
         ql = q.lower()
@@ -35,5 +41,6 @@ def index():
 
     return render_template(
         "catalogo.html",
-        productos=productos, q=q, error=error, cliente=g.cliente,
+        productos=productos, categorias=categorias,
+        categoria_activa=categoria or "Todas", q=q, error=error, cliente=g.cliente,
     )

@@ -70,6 +70,11 @@ def buscar_en_catalogo(sku):
     return None
 
 
+def get_categorias():
+    """Lista de categorías de productos activos, del sistema principal."""
+    return _request("GET", "categorias-mayorista") or []
+
+
 def stock_disponible(sku):
     """{'sku', 'disponible', 'existe'}"""
     return _request("GET", f"stock-disponible/{sku}")

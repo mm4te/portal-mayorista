@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Portal Mayorista · Comenda{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   {% block head %}{% endblock %}
 </head>
@@ -15,9 +16,12 @@
       <nav class="topbar-nav">
         {% if g.cliente_id %}
           <a href="{{ url_for('catalogo.index') }}">Catálogo</a>
-          <a href="{{ url_for('carrito.ver') }}">Carrito{% if carrito_count %} <span class="nav-count">{{ carrito_count }}</span>{% endif %}</a>
           <a href="{{ url_for('pedidos.lista') }}">Mis pedidos</a>
           <a href="{{ url_for('auth.logout') }}">Salir</a>
+          <a href="{{ url_for('carrito.ver') }}" class="carrito-icono-btn" aria-label="Carrito">
+            <i class="bi bi-cart3"></i>
+            {% if carrito_count %}<span class="carrito-badge">{{ carrito_count }}</span>{% endif %}
+          </a>
         {% else %}
           <a href="{{ url_for('auth.login') }}">Ingresar</a>
           <a href="{{ url_for('auth.registro') }}">Crear cuenta</a>
