@@ -74,6 +74,28 @@ def init_db():
         FOREIGN KEY (pedido_id) REFERENCES pedidos_mayoristas(id) ON DELETE CASCADE
     )''')
 
+    # Migraciones incrementales (mismo patrón que comenda-sistema/models.py)
+    _cols_items = [r[1] for r in c.execute("PRAGMA table_info(pedido_mayorista_items)").fetchall()]
+    for col, defn in [
+        # Mejora 1: si Comenda ajusta la cantidad ante falta de stock parcial.
+        ("cantidad_ajustada",            "INTEGER"),
+        # Última cantidad disponible informada al verificar stock (para el form de ajuste).
+        ("stock_disponible_verificado",  "INTEGER"),
+    ]:
+        if col not in _cols_items:
+            c.execute(f"ALTER TABLE pedido_mayorista_items ADD COLUMN {col} {defn}")
+
+    # ── Historial / auditoría de pedidos ───────────────────────────────────
+    c.execute('''CREATE TABLE IF NOT EXISTS pedido_mayorista_historial (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        pedido_id INTEGER NOT NULL,
+        evento    TEXT NOT NULL,
+        detalle   TEXT,
+        usuario   TEXT,
+        fecha     TEXT NOT NULL,
+        FOREIGN KEY (pedido_id) REFERENCES pedidos_mayoristas(id) ON DELETE CASCADE
+    )''')
+
     # ── Configuración del portal (datos bancarios, dirección de retiro, etc.) ─
     c.execute('''CREATE TABLE IF NOT EXISTS configuracion (
         clave TEXT PRIMARY KEY,
@@ -91,6 +113,7 @@ def init_db():
     c.execute("CREATE INDEX IF NOT EXISTS idx_ped_may_cliente ON pedidos_mayoristas(cliente_mayorista_id)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_ped_may_estado ON pedidos_mayoristas(estado)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_ped_items_pedido ON pedido_mayorista_items(pedido_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_ped_hist_pedido ON pedido_mayorista_historial(pedido_id)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_registro_intentos_ip ON registro_intentos(ip, fecha)")
 
     # ── Seeds de configuración (FASE 6: datos de pago) ──────────────────────
@@ -325,6 +348,41 @@ def get_pedido_items(pedido_id):
 # Estados que el sistema principal todavía tiene que atender.
 ESTADOS_PENDIENTES = ("enviado", "confirmando_stock", "confirmado_esperando_pago")
 
+# Cantidad efectiva de un ítem = la ajustada si existe, si no la original.
+_CANT_EFECTIVA = "COALESCE(cantidad_ajustada, cantidad)"
+
+
+def _log_historial(conn, pedido_id, evento, detalle=None, usuario=None):
+    conn.execute(
+        "INSERT INTO pedido_mayorista_historial (pedido_id, evento, detalle, usuario, fecha) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (pedido_id, evento, detalle, usuario or None,
+         datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    )
+
+
+def _recalcular_subtotal(conn, pedido_id):
+    total = conn.execute(
+        f"SELECT COALESCE(SUM({_CANT_EFECTIVA} * precio_unitario_mayorista), 0) "
+        "FROM pedido_mayorista_items WHERE pedido_id = ?",
+        (pedido_id,)
+    ).fetchone()[0]
+    conn.execute(
+        "UPDATE pedidos_mayoristas SET subtotal = ? WHERE id = ?", (total, pedido_id)
+    )
+    return total
+
+
+def get_pedido_historial(pedido_id):
+    conn = get_conn()
+    try:
+        return conn.execute(
+            "SELECT * FROM pedido_mayorista_historial WHERE pedido_id = ? ORDER BY id",
+            (pedido_id,)
+        ).fetchall()
+    finally:
+        conn.close()
+
 
 def listar_pedidos_pendientes():
     conn = get_conn()
@@ -355,11 +413,10 @@ def get_pedido_con_cliente(pedido_id):
         conn.close()
 
 
-def registrar_verificacion_stock(pedido_id, detalle):
-    """detalle: [{'sku', 'disponible'}]. Marca disponible_confirmado por ítem
-    y pasa el pedido a 'confirmando_stock'. Solo aplica si el pedido está en
-    'enviado' o 'confirmando_stock' (no pisa un pedido ya pagado/cancelado)."""
-    disp = {d["sku"]: (1 if d.get("disponible") else 0) for d in (detalle or [])}
+def registrar_verificacion_stock(pedido_id, detalle, usuario=None):
+    """detalle: [{'sku', 'disponible', 'stock_actual'}]. Marca disponible_confirmado
+    y stock_disponible_verificado por ítem y pasa el pedido a 'confirmando_stock'.
+    Solo aplica en 'enviado' / 'confirmando_stock'."""
     conn = get_conn()
     try:
         row = conn.execute(
@@ -369,23 +426,82 @@ def registrar_verificacion_stock(pedido_id, detalle):
             return False, "Pedido no encontrado"
         if row["estado"] not in ("enviado", "confirmando_stock"):
             return False, f"El pedido está en estado '{row['estado']}'"
-        for sku, val in disp.items():
+        faltantes = []
+        for d in (detalle or []):
+            sku = d.get("sku")
+            val = 1 if d.get("disponible") else 0
             conn.execute(
-                "UPDATE pedido_mayorista_items SET disponible_confirmado = ? "
+                "UPDATE pedido_mayorista_items "
+                "SET disponible_confirmado = ?, stock_disponible_verificado = ? "
                 "WHERE pedido_id = ? AND sku = ?",
-                (val, pedido_id, sku)
+                (val, d.get("stock_actual"), pedido_id, sku)
             )
+            if not val:
+                faltantes.append(sku)
         conn.execute(
             "UPDATE pedidos_mayoristas SET estado = 'confirmando_stock' WHERE id = ?",
             (pedido_id,)
         )
+        msg = "Stock OK" if not faltantes else f"Sin stock: {', '.join(faltantes)}"
+        _log_historial(conn, pedido_id, "verificacion_stock", msg, usuario)
         conn.commit()
         return True, None
     finally:
         conn.close()
 
 
-def marcar_pedido_confirmado(pedido_id):
+def ajustar_item_pedido(pedido_id, item_id, nueva_cantidad, ajustado_por=None):
+    """Reduce la cantidad solicitada de un ítem (falta de stock parcial),
+    recalcula el subtotal del pedido y lo deja como disponible. Auditable."""
+    try:
+        nueva_cantidad = int(nueva_cantidad)
+    except (TypeError, ValueError):
+        return False, "Cantidad inválida", None
+    if nueva_cantidad < 1:
+        return False, "La cantidad debe ser al menos 1", None
+
+    conn = get_conn()
+    try:
+        ped = conn.execute(
+            "SELECT estado FROM pedidos_mayoristas WHERE id = ?", (pedido_id,)
+        ).fetchone()
+        if ped is None:
+            return False, "Pedido no encontrado", None
+        if ped["estado"] not in ("enviado", "confirmando_stock"):
+            return False, f"No se puede ajustar un pedido en estado '{ped['estado']}'", None
+
+        it = conn.execute(
+            "SELECT * FROM pedido_mayorista_items WHERE id = ? AND pedido_id = ?",
+            (item_id, pedido_id)
+        ).fetchone()
+        if it is None:
+            return False, "Ítem no encontrado", None
+
+        cant_original = it["cantidad"]
+        if nueva_cantidad > cant_original:
+            return False, "Solo se puede reducir la cantidad, no aumentarla", None
+
+        disp_ver = it["stock_disponible_verificado"]
+        if disp_ver is not None and nueva_cantidad > disp_ver:
+            return False, f"Solo hay {disp_ver} disponibles de {it['sku']}", None
+
+        conn.execute(
+            "UPDATE pedido_mayorista_items "
+            "SET cantidad_ajustada = ?, disponible_confirmado = 1 WHERE id = ?",
+            (nueva_cantidad, item_id)
+        )
+        nuevo_subtotal = _recalcular_subtotal(conn, pedido_id)
+        _log_historial(
+            conn, pedido_id, "ajuste_cantidad",
+            f"{it['sku']}: {cant_original} → {nueva_cantidad}", ajustado_por
+        )
+        conn.commit()
+        return True, None, {"subtotal": nuevo_subtotal}
+    finally:
+        conn.close()
+
+
+def marcar_pedido_confirmado(pedido_id, usuario=None):
     conn = get_conn()
     try:
         row = conn.execute(
@@ -400,13 +516,14 @@ def marcar_pedido_confirmado(pedido_id):
             "fecha_confirmacion = ? WHERE id = ?",
             (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), pedido_id)
         )
+        _log_historial(conn, pedido_id, "confirmado", "Pedido confirmado, esperando pago", usuario)
         conn.commit()
         return True, None
     finally:
         conn.close()
 
 
-def marcar_pedido_rechazado_sin_stock(pedido_id):
+def marcar_pedido_rechazado_sin_stock(pedido_id, usuario=None):
     conn = get_conn()
     try:
         row = conn.execute(
@@ -420,13 +537,14 @@ def marcar_pedido_rechazado_sin_stock(pedido_id):
             "UPDATE pedidos_mayoristas SET estado = 'rechazado_sin_stock' WHERE id = ?",
             (pedido_id,)
         )
+        _log_historial(conn, pedido_id, "rechazado_sin_stock", "Rechazado por falta de stock", usuario)
         conn.commit()
         return True, None
     finally:
         conn.close()
 
 
-def marcar_pedido_pagado(pedido_id, venta_sistema_id):
+def marcar_pedido_pagado(pedido_id, venta_sistema_id, usuario=None):
     conn = get_conn()
     try:
         row = conn.execute(
@@ -442,31 +560,39 @@ def marcar_pedido_pagado(pedido_id, venta_sistema_id):
             "UPDATE pedidos_mayoristas SET estado = 'pagado', venta_sistema_id = ? WHERE id = ?",
             (venta_sistema_id, pedido_id)
         )
+        _log_historial(conn, pedido_id, "pagado", f"Venta #{venta_sistema_id} generada", usuario)
         conn.commit()
         return True, None
     finally:
         conn.close()
 
 
-def elegir_metodo_pago(pedido_id, cliente_id, metodo):
-    """El cliente elige efectivo/transferencia. El estado sigue en
+def elegir_metodo_pago(pedido_id, cliente_id, metodo, cambio=False):
+    """El cliente elige (o cambia) efectivo/transferencia. El estado sigue en
     'confirmado_esperando_pago' hasta que Comenda confirme el pago."""
     if metodo not in ("efectivo", "transferencia"):
         return False, "Método inválido"
     conn = get_conn()
     try:
         row = conn.execute(
-            "SELECT estado FROM pedidos_mayoristas WHERE id = ? AND cliente_mayorista_id = ?",
+            "SELECT estado, metodo_pago_elegido FROM pedidos_mayoristas "
+            "WHERE id = ? AND cliente_mayorista_id = ?",
             (pedido_id, cliente_id)
         ).fetchone()
         if row is None:
             return False, "Pedido no encontrado"
         if row["estado"] != "confirmado_esperando_pago":
-            return False, "El pedido todavía no está confirmado"
+            return False, "El pedido ya no admite cambios en el método de pago"
+        anterior = row["metodo_pago_elegido"]
         conn.execute(
             "UPDATE pedidos_mayoristas SET metodo_pago_elegido = ? WHERE id = ?",
             (metodo, pedido_id)
         )
+        if anterior and anterior != metodo:
+            _log_historial(conn, pedido_id, "cambio_metodo_pago",
+                           f"{anterior} → {metodo}", "cliente")
+        elif not anterior:
+            _log_historial(conn, pedido_id, "metodo_pago_elegido", metodo, "cliente")
         conn.commit()
         return True, None
     finally:

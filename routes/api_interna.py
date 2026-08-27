@@ -30,6 +30,7 @@ from models import (
     listar_pedidos_pendientes, get_pedido_con_cliente, get_pedido_items,
     registrar_verificacion_stock, marcar_pedido_confirmado,
     marcar_pedido_rechazado_sin_stock, marcar_pedido_pagado,
+    ajustar_item_pedido,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,11 +133,15 @@ def _pedido_dict(p, items):
         },
         "items": [
             {
+                "item_id": it["id"],
                 "sku": it["sku"],
                 "nombre_producto": it["nombre_producto"],
                 "cantidad": it["cantidad"],
+                "cantidad_ajustada": it["cantidad_ajustada"],
+                "cantidad_efectiva": it["cantidad_ajustada"] if it["cantidad_ajustada"] is not None else it["cantidad"],
                 "precio_unitario_mayorista": it["precio_unitario_mayorista"],
                 "disponible_confirmado": it["disponible_confirmado"],
+                "stock_disponible_verificado": it["stock_disponible_verificado"],
             }
             for it in items
         ],
@@ -165,16 +170,33 @@ def pedido_mayorista(pedido_id):
 @requiere_api_key
 def registrar_verificacion_stock_route(pedido_id):
     data = request.get_json(silent=True) or {}
-    ok, err = registrar_verificacion_stock(pedido_id, data.get("detalle"))
+    ok, err = registrar_verificacion_stock(
+        pedido_id, data.get("detalle"), usuario=data.get("verificado_por")
+    )
     if not ok:
         return jsonify({"error": err}), 400
     return jsonify({"ok": True, "estado": "confirmando_stock"})
 
 
+@api_interna_bp.post("/ajustar-item-pedido/<int:pedido_id>/<int:item_id>")
+@requiere_api_key
+def ajustar_item_pedido_route(pedido_id, item_id):
+    data = request.get_json(silent=True) or {}
+    ok, err, extra = ajustar_item_pedido(
+        pedido_id, item_id, data.get("nueva_cantidad"),
+        ajustado_por=data.get("ajustado_por"),
+    )
+    if not ok:
+        return jsonify({"error": err}), 400
+    logger.info("Pedido #%s ítem %s ajustado por %s", pedido_id, item_id, data.get("ajustado_por"))
+    return jsonify({"ok": True, "subtotal": extra["subtotal"]})
+
+
 @api_interna_bp.post("/marcar-pedido-confirmado/<int:pedido_id>")
 @requiere_api_key
 def marcar_pedido_confirmado_route(pedido_id):
-    ok, err = marcar_pedido_confirmado(pedido_id)
+    data = request.get_json(silent=True) or {}
+    ok, err = marcar_pedido_confirmado(pedido_id, usuario=data.get("confirmado_por"))
     if not ok:
         return jsonify({"error": err}), 400
     logger.info("Pedido #%s confirmado (esperando pago)", pedido_id)
@@ -184,7 +206,8 @@ def marcar_pedido_confirmado_route(pedido_id):
 @api_interna_bp.post("/rechazar-pedido-sin-stock/<int:pedido_id>")
 @requiere_api_key
 def rechazar_pedido_sin_stock_route(pedido_id):
-    ok, err = marcar_pedido_rechazado_sin_stock(pedido_id)
+    data = request.get_json(silent=True) or {}
+    ok, err = marcar_pedido_rechazado_sin_stock(pedido_id, usuario=data.get("rechazado_por"))
     if not ok:
         return jsonify({"error": err}), 400
     logger.info("Pedido #%s rechazado por falta de stock", pedido_id)
@@ -198,7 +221,7 @@ def marcar_pedido_pagado_route(pedido_id):
     venta_id = data.get("venta_sistema_id") or data.get("venta_id")
     if venta_id is None:
         return jsonify({"error": "Falta venta_sistema_id"}), 400
-    ok, err = marcar_pedido_pagado(pedido_id, venta_id)
+    ok, err = marcar_pedido_pagado(pedido_id, venta_id, usuario=data.get("pagado_por"))
     if not ok:
         return jsonify({"error": err}), 400
     logger.info("Pedido #%s marcado como pagado (venta %s)", pedido_id, venta_id)
