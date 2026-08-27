@@ -235,3 +235,86 @@ def siguiente_numero_pedido(conn=None):
     finally:
         if propia:
             conn.close()
+
+
+# ── Pedidos ─────────────────────────────────────────────────────────────────
+
+def crear_pedido_enviado(cliente_id, items):
+    """Crea un pedido (estado='enviado') con sus ítems, en una sola transacción.
+
+    items: [{'sku', 'nombre', 'precio', 'cantidad'}]
+    Devuelve (pedido_id, numero, subtotal).
+    """
+    conn = get_conn()
+    conn.isolation_level = None
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        numero = siguiente_numero_pedido(conn)
+        subtotal = sum(float(i["precio"]) * int(i["cantidad"]) for i in items)
+        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        cur = conn.execute(
+            """INSERT INTO pedidos_mayoristas
+               (cliente_mayorista_id, numero, estado, subtotal, fecha_creacion)
+               VALUES (?, ?, 'enviado', ?, ?)""",
+            (cliente_id, numero, subtotal, fecha)
+        )
+        pedido_id = cur.lastrowid
+
+        for i in items:
+            conn.execute(
+                """INSERT INTO pedido_mayorista_items
+                   (pedido_id, sku, nombre_producto, cantidad, precio_unitario_mayorista)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (pedido_id, i["sku"], i["nombre"], int(i["cantidad"]), float(i["precio"]))
+            )
+
+        conn.execute("COMMIT")
+        return pedido_id, numero, subtotal
+    except Exception:
+        try:
+            conn.execute("ROLLBACK")
+        except Exception:
+            pass
+        raise
+    finally:
+        conn.close()
+
+
+def listar_pedidos_cliente(cliente_id):
+    conn = get_conn()
+    try:
+        return conn.execute(
+            "SELECT * FROM pedidos_mayoristas WHERE cliente_mayorista_id = ? "
+            "ORDER BY id DESC",
+            (cliente_id,)
+        ).fetchall()
+    finally:
+        conn.close()
+
+
+def get_pedido(pedido_id, cliente_id=None):
+    """Trae el pedido. Si se pasa cliente_id, exige que sea del dueño (o None)."""
+    conn = get_conn()
+    try:
+        if cliente_id is not None:
+            return conn.execute(
+                "SELECT * FROM pedidos_mayoristas WHERE id = ? AND cliente_mayorista_id = ?",
+                (pedido_id, cliente_id)
+            ).fetchone()
+        return conn.execute(
+            "SELECT * FROM pedidos_mayoristas WHERE id = ?", (pedido_id,)
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def get_pedido_items(pedido_id):
+    conn = get_conn()
+    try:
+        return conn.execute(
+            "SELECT * FROM pedido_mayorista_items WHERE pedido_id = ? ORDER BY id",
+            (pedido_id,)
+        ).fetchall()
+    finally:
+        conn.close()

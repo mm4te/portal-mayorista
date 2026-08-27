@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ pedido.numero }} · Portal Mayorista{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('pedidos.lista') }}">&larr; Mis pedidos</a></p>
+
+<div class="card">
+  <div class="pedido-head">
+    <h1>{{ pedido.numero }}</h1>
+    <span class="badge badge-estado">{{ estado_label.get(pedido.estado, pedido.estado) }}</span>
+  </div>
+  <p class="subtitle">Enviado el {{ pedido.fecha_creacion }}</p>
+
+  <table class="carrito-tabla">
+    <thead>
+      <tr><th>Producto</th><th>Precio unit.</th><th>Cantidad</th><th>Subtotal</th></tr>
+    </thead>
+    <tbody>
+      {% for i in items %}
+      <tr>
+        <td>
+          <strong>{{ i.nombre_producto }}</strong><br>
+          <span class="sku">{{ i.sku }}</span>
+          {% if i.disponible_confirmado == 0 %}
+            <span class="badge badge-sinstock">sin stock</span>
+          {% elif i.disponible_confirmado == 1 %}
+            <span class="badge badge-disponible">confirmado</span>
+          {% endif %}
+        </td>
+        <td>$ {{ i.precio_unitario_mayorista | pesos }}</td>
+        <td>{{ i.cantidad }}</td>
+        <td>$ {{ (i.precio_unitario_mayorista * i.cantidad) | pesos }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="total-label">Total</td>
+        <td class="total-value">$ {{ pedido.subtotal | pesos }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  {% if pedido.estado == 'enviado' or pedido.estado == 'confirmando_stock' %}
+    <div class="note">Estamos revisando el stock de tu pedido. Te avisamos apenas esté confirmado.</div>
+  {% elif pedido.estado == 'rechazado_sin_stock' %}
+    <div class="note">No pudimos cubrir todo el stock de este pedido. Escribinos para ajustarlo.</div>
+  {% endif %}
+</div>
+{% endblock %}

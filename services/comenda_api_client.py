@@ -60,6 +60,16 @@ def get_catalogo():
     return _request("GET", "catalogo-mayorista") or []
 
 
+def buscar_en_catalogo(sku):
+    """Devuelve el dict del producto (o None) buscándolo en el catálogo por SKU.
+    Se usa para resolver nombre/precio autoritativos al agregar al carrito."""
+    sku = (sku or "").strip()
+    for p in get_catalogo():
+        if p.get("sku") == sku:
+            return p
+    return None
+
+
 def stock_disponible(sku):
     """{'sku', 'disponible', 'existe'}"""
     return _request("GET", f"stock-disponible/{sku}")
@@ -83,4 +93,15 @@ def avisar_cuenta_nueva(cliente):
         return True
     except ComendaAPIError as e:
         logger.warning("avisar_cuenta_nueva falló (no crítico): %s", e)
+        return False
+
+
+def avisar_pedido_nuevo(pedido):
+    """Notifica al sistema principal que un mayorista envió un pedido para
+    revisión de stock. Best-effort: si falla, no bloquea el envío."""
+    try:
+        _request("POST", "aviso-pedido-mayorista", json=pedido, timeout=5)
+        return True
+    except ComendaAPIError as e:
+        logger.warning("avisar_pedido_nuevo falló (no crítico): %s", e)
         return False

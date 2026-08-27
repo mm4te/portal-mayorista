@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Catálogo · Portal Mayorista{% endblock %}
+
+{% block content %}
+<div class="catalogo-head">
+  <div>
+    <h1>Catálogo mayorista</h1>
+    <p class="subtitle">Precios con descuento mayorista. Armá tu pedido y enviálo para revisión.</p>
+  </div>
+  <form method="GET" class="buscador">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre o SKU">
+    <button type="submit" class="btn btn-ghost">Buscar</button>
+    {% if q %}<a href="{{ url_for('catalogo.index') }}" class="clear-q">Limpiar</a>{% endif %}
+  </form>
+</div>
+
+{% if error %}
+<div class="flash-messages"><p class="error">No se pudo cargar el catálogo: {{ error }}</p></div>
+{% endif %}
+
+{% if not error and not productos %}
+<div class="note">No se encontraron productos{% if q %} para «{{ q }}»{% endif %}.</div>
+{% endif %}
+
+<div class="grid-productos">
+  {% for p in productos %}
+  <div class="producto-card">
+    <div class="producto-img">
+      {% if p.imagen_url %}
+        <img src="{{ p.imagen_url }}" alt="{{ p.nombre }}" loading="lazy">
+      {% else %}
+        <div class="img-placeholder">Sin imagen</div>
+      {% endif %}
+    </div>
+    <div class="producto-body">
+      <h3>{{ p.nombre }}</h3>
+      <div class="sku">{{ p.sku }}</div>
+      <div class="precio">$ {{ p.precio_mayorista | pesos }}</div>
+      {% if p.disponible %}
+        <span class="badge badge-disponible">Disponible</span>
+      {% else %}
+        <span class="badge badge-sinstock">Sin stock</span>
+      {% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('carrito.agregar') }}" class="producto-add">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="sku" value="{{ p.sku }}">
+      <input type="number" name="cantidad" value="1" min="1" {{ 'disabled' if not p.disponible }}>
+      <button type="submit" class="btn btn-block" {{ 'disabled' if not p.disponible }}>
+        Agregar
+      </button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

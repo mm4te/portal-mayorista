@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Mis pedidos · Portal Mayorista{% endblock %}
+
+{% block content %}
+<h1>Mis pedidos</h1>
+
+{% if not pedidos %}
+  <div class="note">
+    Todavía no enviaste ningún pedido.
+    <a href="{{ url_for('catalogo.index') }}">Ir al catálogo</a>.
+  </div>
+{% else %}
+<div class="card">
+  <table class="carrito-tabla">
+    <thead>
+      <tr><th>Pedido</th><th>Fecha</th><th>Total</th><th>Estado</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for p in pedidos %}
+      <tr>
+        <td><strong>{{ p.numero }}</strong></td>
+        <td>{{ p.fecha_creacion }}</td>
+        <td>$ {{ p.subtotal | pesos }}</td>
+        <td><span class="badge badge-estado">{{ estado_label.get(p.estado, p.estado) }}</span></td>
+        <td><a href="{{ url_for('pedidos.detalle', pedido_id=p.id) }}">Ver</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

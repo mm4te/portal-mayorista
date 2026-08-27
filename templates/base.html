@@ -15,7 +15,7 @@
       <nav class="topbar-nav">
         {% if g.cliente_id %}
           <a href="{{ url_for('catalogo.index') }}">Catálogo</a>
-          <a href="{{ url_for('carrito.ver') }}">Carrito</a>
+          <a href="{{ url_for('carrito.ver') }}">Carrito{% if carrito_count %} <span class="nav-count">{{ carrito_count }}</span>{% endif %}</a>
           <a href="{{ url_for('pedidos.lista') }}">Mis pedidos</a>
           <a href="{{ url_for('auth.logout') }}">Salir</a>
         {% else %}

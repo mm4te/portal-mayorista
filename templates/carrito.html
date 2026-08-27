@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Carrito · Portal Mayorista{% endblock %}
+
+{% block content %}
+<h1>Tu carrito</h1>
+
+{% if not items %}
+  <div class="note">
+    Todavía no agregaste productos.
+    <a href="{{ url_for('catalogo.index') }}">Ir al catálogo</a>.
+  </div>
+{% else %}
+<div class="card carrito-card">
+  <table class="carrito-tabla">
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Precio unit.</th>
+        <th>Cantidad</th>
+        <th>Subtotal</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in items %}
+      <tr>
+        <td>
+          <strong>{{ i.nombre }}</strong><br>
+          <span class="sku">{{ i.sku }}</span>
+        </td>
+        <td>$ {{ i.precio | pesos }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('carrito.actualizar') }}" class="qty-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="sku" value="{{ i.sku }}">
+            <input type="number" name="cantidad" value="{{ i.cantidad }}" min="1">
+            <button type="submit" class="btn-mini">Actualizar</button>
+          </form>
+        </td>
+        <td>$ {{ (i.precio * i.cantidad) | pesos }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('carrito.quitar') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="sku" value="{{ i.sku }}">
+            <button type="submit" class="btn-mini btn-mini-danger">Quitar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="total-label">Total</td>
+        <td colspan="2" class="total-value">$ {{ total | pesos }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <form method="POST" action="{{ url_for('carrito.enviar') }}" class="enviar-form"
+        onsubmit="return confirm('¿Enviar el pedido para revisión de stock?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <a href="{{ url_for('catalogo.index') }}" class="btn btn-ghost">Seguir comprando</a>
+    <button type="submit" class="btn">Enviar pedido</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

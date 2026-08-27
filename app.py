@@ -47,6 +47,14 @@ def create_app():
         except (ValueError, TypeError):
             return str(valor)
 
+    @app.context_processor
+    def _inject_carrito():
+        from services.carrito import carrito_count
+        try:
+            return {"carrito_count": carrito_count()}
+        except Exception:
+            return {"carrito_count": 0}
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(catalogo_bp)
     app.register_blueprint(carrito_bp)
