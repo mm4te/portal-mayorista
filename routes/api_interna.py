@@ -10,6 +10,13 @@ FASE 2 (cuentas):
   POST /api/interno/aprobar-mayorista/<id>
   POST /api/interno/rechazar-mayorista/<id>
 
+FASE 7 (gestión completa de cuentas):
+  GET  /api/interno/mayoristas-todos?estado=todos|pendiente_aprobacion|aprobado|rechazado|suspendido
+  POST /api/interno/editar-mayorista/<id>
+  POST /api/interno/suspender-mayorista/<id>
+  POST /api/interno/reactivar-mayorista/<id>
+  POST /api/interno/eliminar-mayorista/<id>
+
 FASE 4 (pedidos):
   GET  /api/interno/pedidos-pendientes-mayorista
   GET  /api/interno/pedido-mayorista/<id>
@@ -20,18 +27,24 @@ FASE 4 (pedidos):
 """
 import hmac
 import logging
+import re
 from functools import wraps
 
 from flask import Blueprint, request, jsonify
 
 from config import Config
 from models import (
+    ESTADOS_CLIENTE,
     listar_clientes_por_estado, actualizar_estado_cliente, get_cliente,
+    listar_clientes_todos, contar_pedidos_cliente, actualizar_datos_cliente,
+    eliminar_cliente, get_cliente_por_email,
     listar_pedidos_pendientes, get_pedido_con_cliente, get_pedido_items,
     registrar_verificacion_stock, marcar_pedido_confirmado,
     marcar_pedido_rechazado_sin_stock, marcar_pedido_pagado,
     ajustar_item_pedido,
 )
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +124,107 @@ def rechazar_mayorista(cliente_id):
         return jsonify({"error": "No se pudo actualizar"}), 400
     logger.info("Mayorista #%s rechazado por %s", cliente_id, data.get("aprobado_por"))
     return jsonify({"ok": True, "estado": "rechazado"})
+
+
+# ── Gestión completa de cuentas (FASE 7) ─────────────────────────────────────
+
+@api_interna_bp.get("/mayoristas-todos")
+@requiere_api_key
+def mayoristas_todos():
+    estado = request.args.get("estado", "todos")
+    if estado != "todos" and estado not in ESTADOS_CLIENTE:
+        return jsonify({"error": "Estado inválido"}), 400
+    clientes = listar_clientes_todos(None if estado == "todos" else estado)
+    resultado = []
+    for c in clientes:
+        d = _cliente_dict(c)
+        d["total_pedidos"] = c["total_pedidos"]
+        d["total_comprado"] = c["total_comprado"]
+        resultado.append(d)
+    return jsonify(resultado)
+
+
+@api_interna_bp.post("/editar-mayorista/<int:cliente_id>")
+@requiere_api_key
+def editar_mayorista(cliente_id):
+    data = request.get_json(silent=True) or {}
+    cli = get_cliente(cliente_id)
+    if cli is None:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    nombre_empresa = (data.get("nombre_empresa") or "").strip()
+    cuit = re.sub(r"\D", "", data.get("cuit") or "")
+    telefono = (data.get("telefono") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+
+    if not nombre_empresa:
+        return jsonify({"error": "El nombre de la empresa es obligatorio"}), 400
+    if cuit and len(cuit) != 11:
+        return jsonify({"error": "El CUIT debe tener 11 dígitos"}), 400
+    if not _EMAIL_RE.match(email):
+        return jsonify({"error": "El email no es válido"}), 400
+
+    existente = get_cliente_por_email(email)
+    if existente and existente["id"] != cliente_id:
+        return jsonify({"error": "Ya existe otra cuenta con ese email"}), 400
+
+    ok = actualizar_datos_cliente(cliente_id, nombre_empresa, cuit or None, telefono or None, email)
+    if not ok:
+        return jsonify({"error": "No se pudo actualizar"}), 400
+    logger.info("Mayorista #%s editado", cliente_id)
+    return jsonify({"ok": True})
+
+
+@api_interna_bp.post("/suspender-mayorista/<int:cliente_id>")
+@requiere_api_key
+def suspender_mayorista(cliente_id):
+    data = request.get_json(silent=True) or {}
+    cli = get_cliente(cliente_id)
+    if cli is None:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+    if cli["estado"] == "suspendido":
+        return jsonify({"ok": True, "estado": "suspendido", "sin_cambios": True})
+
+    ok = actualizar_estado_cliente(cliente_id, "suspendido", aprobado_por=data.get("usuario"))
+    if not ok:
+        return jsonify({"error": "No se pudo actualizar"}), 400
+    logger.info("Mayorista #%s suspendido por %s", cliente_id, data.get("usuario"))
+    return jsonify({"ok": True, "estado": "suspendido"})
+
+
+@api_interna_bp.post("/reactivar-mayorista/<int:cliente_id>")
+@requiere_api_key
+def reactivar_mayorista(cliente_id):
+    data = request.get_json(silent=True) or {}
+    cli = get_cliente(cliente_id)
+    if cli is None:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+    if cli["estado"] == "aprobado":
+        return jsonify({"ok": True, "estado": "aprobado", "sin_cambios": True})
+
+    ok = actualizar_estado_cliente(cliente_id, "aprobado", aprobado_por=data.get("usuario"))
+    if not ok:
+        return jsonify({"error": "No se pudo actualizar"}), 400
+    logger.info("Mayorista #%s reactivado por %s", cliente_id, data.get("usuario"))
+    return jsonify({"ok": True, "estado": "aprobado"})
+
+
+@api_interna_bp.post("/eliminar-mayorista/<int:cliente_id>")
+@requiere_api_key
+def eliminar_mayorista(cliente_id):
+    cli = get_cliente(cliente_id)
+    if cli is None:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    tiene_pedidos = contar_pedidos_cliente(cliente_id)
+    if tiene_pedidos > 0:
+        return jsonify({
+            "error": f"Tiene {tiene_pedidos} pedido(s) asociado(s). Suspendé la cuenta en su lugar."
+        }), 400
+
+    eliminar_cliente(cliente_id)
+    logger.info("Mayorista #%s eliminado", cliente_id)
+    return jsonify({"ok": True})
 
 
 # ── Pedidos ─────────────────────────────────────────────────────────────────

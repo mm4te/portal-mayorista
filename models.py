@@ -239,6 +239,64 @@ def actualizar_estado_cliente(cliente_id, nuevo_estado, aprobado_por=None, motiv
         conn.close()
 
 
+def listar_clientes_todos(estado=None):
+    """Todas las cuentas (cualquier estado), con contador y total comprado
+    (suma de pedidos ya pagados). estado=None trae todas."""
+    conn = get_conn()
+    try:
+        sql = (
+            "SELECT c.*, "
+            "COUNT(p.id) AS total_pedidos, "
+            "COALESCE(SUM(CASE WHEN p.estado = 'pagado' THEN p.subtotal ELSE 0 END), 0) AS total_comprado "
+            "FROM clientes_mayoristas c "
+            "LEFT JOIN pedidos_mayoristas p ON p.cliente_mayorista_id = c.id "
+        )
+        params = ()
+        if estado:
+            sql += "WHERE c.estado = ? "
+            params = (estado,)
+        sql += "GROUP BY c.id ORDER BY c.fecha_registro DESC"
+        return conn.execute(sql, params).fetchall()
+    finally:
+        conn.close()
+
+
+def contar_pedidos_cliente(cliente_id):
+    conn = get_conn()
+    try:
+        return conn.execute(
+            "SELECT COUNT(*) FROM pedidos_mayoristas WHERE cliente_mayorista_id = ?",
+            (cliente_id,)
+        ).fetchone()[0]
+    finally:
+        conn.close()
+
+
+def actualizar_datos_cliente(cliente_id, nombre_empresa, cuit, telefono, email):
+    conn = get_conn()
+    try:
+        cur = conn.execute(
+            """UPDATE clientes_mayoristas
+               SET nombre_empresa = ?, cuit = ?, telefono = ?, email = ?
+               WHERE id = ?""",
+            (nombre_empresa, cuit, telefono, email, cliente_id)
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def eliminar_cliente(cliente_id):
+    conn = get_conn()
+    try:
+        cur = conn.execute("DELETE FROM clientes_mayoristas WHERE id = ?", (cliente_id,))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
 # ── Numeración de pedidos ───────────────────────────────────────────────────
 
 def siguiente_numero_pedido(conn=None):
