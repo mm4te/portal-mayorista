@@ -40,25 +40,48 @@
 
     <div class="grilla-catalogo">
       {% for p in productos %}
-      <div class="producto-card-mayorista">
+      {% set unica = p.variantes|length == 1 %}
+      <div class="producto-card-mayorista{{ '' if unica else ' clickable' }}"
+           {% if not unica %}onclick="location.href='{{ url_for('catalogo.producto_detalle', product_id=p.product_id) }}'"{% endif %}>
         {% if p.imagen_url %}
-          <img src="{{ p.imagen_url }}" alt="{{ p.nombre }}" loading="lazy">
+          <img src="{{ p.imagen_url }}" alt="{{ p.nombre_base }}" loading="lazy">
         {% else %}
           <div class="img-vacia"><i class="bi bi-image"></i></div>
         {% endif %}
-        <div class="nombre">{{ p.nombre }}</div>
+        <div class="nombre">{{ p.nombre_base }}</div>
         <div class="precio">$ {{ p.precio_mayorista | pesos }}</div>
-        {# La grilla lista solo productos disponibles: el sin stock no llega acá. #}
-        <span class="mini-badge disp">Disponible</span>
-        <div class="selector-cantidad">
-          <button type="button" onclick="cambiarCantidad(this, -1)" aria-label="Restar">−</button>
-          <input type="number" class="input-cantidad" value="1" min="1" max="99" aria-label="Cantidad">
-          <button type="button" onclick="cambiarCantidad(this, 1)" aria-label="Sumar">+</button>
-        </div>
-        <button type="button" class="btn-agregar-carrito"
-                data-sku="{{ p.sku }}" onclick="agregarAlCarrito(this)">
-          <i class="bi bi-cart-plus"></i> Agregar
-        </button>
+
+        {% if unica %}
+          {# Producto simple (una sola variante comprable): igual que antes,
+             cantidad + Agregar directo desde la grilla, sin ir al detalle. #}
+          <span class="mini-badge disp">Disponible</span>
+          <div class="selector-cantidad">
+            <button type="button" onclick="cambiarCantidad(this, -1)" aria-label="Restar">−</button>
+            <input type="number" class="input-cantidad" value="1" min="1" max="99" aria-label="Cantidad">
+            <button type="button" onclick="cambiarCantidad(this, 1)" aria-label="Sumar">+</button>
+          </div>
+          <button type="button" class="btn-agregar-carrito"
+                  data-sku="{{ p.variantes[0].sku }}" onclick="agregarAlCarrito(this)">
+            <i class="bi bi-cart-plus"></i> Agregar
+          </button>
+        {% else %}
+          {# Varias variantes disponibles: miniaturas + "Ver opciones",
+             la elección de variante pasa a la página de detalle. #}
+          <div class="mini-variantes">
+            {% for v in p.variantes[:4] %}
+              <img src="{{ v.imagen_url or p.imagen_url }}" class="mini-thumb"
+                   title="{{ v.atributo or ('Opción ' ~ loop.index) }}"
+                   alt="{{ v.atributo or '' }}">
+            {% endfor %}
+            {% if p.variantes|length > 4 %}
+              <span class="mas-variantes">+{{ p.variantes|length - 4 }}</span>
+            {% endif %}
+          </div>
+          <span class="mini-badge disp">{{ p.variantes|length }} opciones</span>
+          <div class="btn-agregar-carrito btn-ver-opciones">
+            <i class="bi bi-grid"></i> Ver opciones
+          </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>

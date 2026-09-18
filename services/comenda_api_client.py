@@ -56,21 +56,42 @@ def _request(method, path, *, json=None, params=None, timeout=None):
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
 def get_catalogo(solo_disponibles=False):
-    """Lista de productos activos con precio mayorista y disponibilidad.
+    """Catálogo agrupado por variantes: una entrada por product_id (o por sku
+    para los productos sin variantes), cada una con su lista de 'variantes'.
     solo_disponibles=True pide que el sistema principal ya excluya los sin stock."""
     params = {"solo_disponibles": "true"} if solo_disponibles else None
     return _request("GET", "catalogo-mayorista", params=params) or []
 
 
+def get_producto(product_id, solo_disponibles=False):
+    """Detalle de un producto agrupado (todas sus variantes + descripcion_larga)
+    por product_id. None si no existe (404 del sistema principal)."""
+    params = {"solo_disponibles": "true"} if solo_disponibles else None
+    return _request("GET", f"producto-mayorista/{product_id}", params=params)
+
+
 def buscar_en_catalogo(sku):
-    """Devuelve el dict del producto (o None) buscándolo en el catálogo por SKU.
-    Se usa para resolver nombre/precio autoritativos al agregar al carrito.
-    Busca sobre el catálogo completo a propósito: así el carrito distingue
+    """Devuelve un dict plano {sku, nombre, precio_mayorista, disponible} (o
+    None) buscando la variante por SKU dentro del catálogo agrupado completo.
+    Se usa para resolver nombre/precio autoritativos al agregar al carrito —
+    nunca confiamos en lo que manda el cliente. Busca sobre el catálogo
+    completo (sin solo_disponibles) a propósito: así el carrito distingue
     «no existe» de «se quedó sin stock» y mantiene su validación."""
     sku = (sku or "").strip()
-    for p in get_catalogo():
-        if p.get("sku") == sku:
-            return p
+    if not sku:
+        return None
+    for grupo in get_catalogo():
+        for v in grupo.get("variantes", []):
+            if v.get("sku") == sku:
+                nombre = grupo.get("nombre_base") or ""
+                if v.get("atributo"):
+                    nombre = f"{nombre} - {v['atributo']}"
+                return {
+                    "sku": sku,
+                    "nombre": nombre,
+                    "precio_mayorista": grupo.get("precio_mayorista"),
+                    "disponible": bool(v.get("disponible")),
+                }
     return None
 
 

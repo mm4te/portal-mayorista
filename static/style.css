@@ -277,6 +277,38 @@ input:focus, textarea:focus, select:focus {
 /* El botón de agregar queda pegado al fondo aunque la card no tenga selector */
 .producto-card-mayorista .btn-agregar-carrito { margin-top: auto; }
 .producto-card-mayorista .mini-badge { align-self: flex-start; }
+/* Cards con más de una variante: toda la card navega al detalle */
+.producto-card-mayorista.clickable { cursor: pointer; }
+.producto-card-mayorista.clickable:hover { border-color: var(--primary); box-shadow: var(--shadow-hover); }
+
+/* Miniaturas de variante (color/atributo) debajo del nombre */
+.mini-variantes {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+}
+.mini-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--border-soft);
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+.mas-variantes {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+/* "Ver opciones": mismo look que el botón de agregar pero no dispara su
+   propio click — el click lo maneja la card entera (onclick en el div padre). */
+.btn-ver-opciones {
+  margin-top: auto;
+  pointer-events: none;
+}
 .producto-card-mayorista img,
 .producto-card-mayorista .img-vacia {
   width: 100%;
@@ -458,6 +490,84 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .cambiar-pago-link { margin-top: 14px; font-size: 0.85rem; }
 .cambiar-pago-link a { color: var(--text-muted); text-decoration: underline; }
 
+/* ── Detalle de producto agrupado ────────────────────────────────────────── */
+.producto-detalle-page { max-width: 980px; }
+.volver-link {
+  display: inline-block;
+  margin-bottom: 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.volver-link:hover { color: var(--primary); text-decoration: none; }
+
+.detalle-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) 1fr;
+  gap: 32px;
+  align-items: start;
+}
+.detalle-imagen img,
+.detalle-imagen .img-vacia {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: #f3f4f6;
+  display: block;
+}
+.img-vacia.grande {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  font-size: 3rem;
+}
+
+.detalle-info h1 { font-size: 1.4rem; margin-bottom: 8px; }
+.detalle-precio {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 18px;
+}
+.detalle-descripcion { margin-bottom: 20px; }
+.detalle-descripcion h2 { font-size: 0.95rem; margin-bottom: 8px; }
+.descripcion-texto { font-size: 0.92rem; color: var(--dark); line-height: 1.6; }
+.descripcion-texto p { margin-bottom: 10px; }
+.descripcion-texto ul { margin: 0 0 10px 20px; }
+.texto-muted { color: var(--text-muted); font-size: 0.9rem; font-style: italic; }
+
+.selector-variantes { margin-bottom: 18px; }
+.selector-variantes h2 { font-size: 0.95rem; margin-bottom: 10px; }
+.opciones-variante { display: flex; flex-wrap: wrap; gap: 8px; }
+.opcion-variante-label {
+  position: relative;
+  padding: 8px 16px;
+  border: 1.5px solid var(--border-input);
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--dark);
+  user-select: none;
+}
+.opcion-variante-label:hover { border-color: var(--primary); }
+.opcion-variante-label input { position: absolute; opacity: 0; pointer-events: none; }
+.opcion-variante-label.activa {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.detalle-cantidad { justify-content: flex-start; margin: 0 0 16px; }
+
+.producto-detalle-page .btn:disabled {
+  background: #e9ecef;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
 /* ── Responsive: catálogo con sidebar → chips horizontales ───────────────── */
 @media (max-width: 780px) {
   .catalogo-layout { flex-direction: column; gap: 14px; }
@@ -493,6 +603,8 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 @media (max-width: 780px) {
   .grilla-catalogo { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .detalle-layout { grid-template-columns: 1fr; gap: 20px; }
+  .detalle-imagen img, .detalle-imagen .img-vacia { aspect-ratio: 4 / 3; }
 }
 
 @media (max-width: 560px) {

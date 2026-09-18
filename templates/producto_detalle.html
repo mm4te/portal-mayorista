@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ producto.nombre_base if producto else 'Producto' }} · Portal Mayorista{% endblock %}
+{% block page_class %}producto-detalle-page{% endblock %}
+
+{% block content %}
+{% if error %}
+  <div class="flash-messages"><p class="error">No se pudo cargar el producto: {{ error }}</p></div>
+  <p><a href="{{ url_for('catalogo.index') }}">← Volver al catálogo</a></p>
+{% else %}
+
+<a href="{{ url_for('catalogo.index') }}" class="volver-link">← Volver al catálogo</a>
+
+<div class="detalle-layout">
+  <div class="detalle-imagen">
+    {% if producto.imagen_url %}
+      <img id="imagen-principal" src="{{ producto.imagen_url }}" alt="{{ producto.nombre_base }}">
+    {% else %}
+      <div class="img-vacia grande"><i class="bi bi-image"></i></div>
+    {% endif %}
+  </div>
+
+  <div class="detalle-info">
+    <h1>{{ producto.nombre_base }}</h1>
+    <div class="detalle-precio">$ {{ producto.precio_mayorista | pesos }}</div>
+
+    <div class="detalle-descripcion">
+      <h2>Descripción</h2>
+      {% if producto.descripcion_larga %}
+        <div class="descripcion-texto">{{ producto.descripcion_larga | safe }}</div>
+      {% else %}
+        <p class="texto-muted">
+          Descripción no disponible. Consultanos por WhatsApp para más detalles sobre este producto.
+        </p>
+      {% endif %}
+    </div>
+
+    {% if producto.variantes|length > 1 %}
+    <div class="selector-variantes">
+      <h2>Elegí una opción</h2>
+      <div class="opciones-variante">
+        {% for v in producto.variantes %}
+          <label class="opcion-variante-label">
+            <input type="radio" name="variante" class="opcion-variante"
+                   value="{{ v.sku }}" data-imagen="{{ v.imagen_url or producto.imagen_url or '' }}">
+            <span>{{ v.atributo or ('Opción ' ~ loop.index) }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="selector-cantidad detalle-cantidad">
+      <button type="button" onclick="cambiarCantidad(this, -1)" aria-label="Restar">−</button>
+      <input type="number" id="input-cantidad-detalle" class="input-cantidad" value="1" min="1" max="99" aria-label="Cantidad">
+      <button type="button" onclick="cambiarCantidad(this, 1)" aria-label="Sumar">+</button>
+    </div>
+
+    <button type="button" id="btn-agregar-detalle" class="btn btn-block"
+            {% if producto.variantes|length > 1 %}disabled{% endif %}
+            data-sku="{{ producto.variantes[0].sku if producto.variantes|length == 1 else '' }}"
+            onclick="agregarDesdeDetalle(this)">
+      <i class="bi bi-cart-plus"></i>
+      <span id="btn-agregar-texto">{% if producto.variantes|length > 1 %}Elegí una opción{% else %}Agregar al carrito{% endif %}</span>
+    </button>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function getCsrfToken() {
+    var m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.getAttribute('content') : '';
+  }
+
+  function cambiarCantidad(btn, delta) {
+    var input = btn.parentElement.querySelector('.input-cantidad');
+    var valor = parseInt(input.value, 10) || 1;
+    input.value = Math.max(1, Math.min(99, valor + delta));
+  }
+
+  function actualizarBadgeCarrito(cantidad) {
+    var badge = document.querySelector('.carrito-badge');
+    if (!badge) return;
+    if (cantidad > 0) {
+      badge.textContent = cantidad;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Selector de variante obligatorio: hasta que no se elige una opción,
+  // el botón de agregar queda deshabilitado (ver atributo 'disabled' inicial
+  // en el HTML, para productos con más de una variante).
+  document.querySelectorAll('.opcion-variante').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      var btn = document.getElementById('btn-agregar-detalle');
+      btn.dataset.sku = this.value;
+      btn.disabled = false;
+      document.getElementById('btn-agregar-texto').textContent = 'Agregar al carrito';
+
+      document.querySelectorAll('.opcion-variante-label').forEach(function (l) {
+        l.classList.remove('activa');
+      });
+      this.closest('.opcion-variante-label').classList.add('activa');
+
+      var imgPrincipal = document.getElementById('imagen-principal');
+      if (imgPrincipal && this.dataset.imagen) {
+        imgPrincipal.src = this.dataset.imagen;
+      }
+    });
+  });
+
+  function agregarDesdeDetalle(btn) {
+    if (btn.disabled) return;
+    if (!btn.dataset.sku) {
+      alert('Elegí una opción antes de agregar al carrito.');
+      return;
+    }
+    var input = document.getElementById('input-cantidad-detalle');
+    var cantidad = parseInt(input && input.value, 10) || 1;
+    var textoBtn = document.getElementById('btn-agregar-texto');
+    var textoOriginal = textoBtn.textContent;
+
+    btn.disabled = true;
+    fetch("{{ url_for('carrito.agregar') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+      body: JSON.stringify({ sku: btn.dataset.sku, cantidad: cantidad })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        btn.disabled = false;
+        if (res.data && res.data.ok) {
+          actualizarBadgeCarrito(res.data.total_items);
+          textoBtn.textContent = 'Agregado ✓';
+          setTimeout(function () { textoBtn.textContent = textoOriginal; }, 1200);
+          if (input) input.value = 1;
+        } else {
+          alert((res.data && res.data.error) || 'No se pudo agregar el producto.');
+        }
+      })
+      .catch(function () {
+        btn.disabled = false;
+        alert('No se pudo agregar el producto. Revisá tu conexión e intentá de nuevo.');
+      });
+  }
+</script>
+{% endblock %}
