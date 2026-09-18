@@ -27,11 +27,11 @@ def _url(path):
     return f"{Config.COMENDA_API_URL}/api/interno/{path.lstrip('/')}"
 
 
-def _request(method, path, *, json=None, timeout=None):
+def _request(method, path, *, json=None, params=None, timeout=None):
     url = _url(path)
     try:
         resp = requests.request(
-            method, url, json=json, headers=_headers(),
+            method, url, json=json, params=params, headers=_headers(),
             timeout=timeout or Config.API_TIMEOUT,
         )
     except requests.RequestException as e:
@@ -55,14 +55,18 @@ def _request(method, path, *, json=None, timeout=None):
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
-def get_catalogo():
-    """Lista de productos activos con precio mayorista y disponibilidad."""
-    return _request("GET", "catalogo-mayorista") or []
+def get_catalogo(solo_disponibles=False):
+    """Lista de productos activos con precio mayorista y disponibilidad.
+    solo_disponibles=True pide que el sistema principal ya excluya los sin stock."""
+    params = {"solo_disponibles": "true"} if solo_disponibles else None
+    return _request("GET", "catalogo-mayorista", params=params) or []
 
 
 def buscar_en_catalogo(sku):
     """Devuelve el dict del producto (o None) buscándolo en el catálogo por SKU.
-    Se usa para resolver nombre/precio autoritativos al agregar al carrito."""
+    Se usa para resolver nombre/precio autoritativos al agregar al carrito.
+    Busca sobre el catálogo completo a propósito: así el carrito distingue
+    «no existe» de «se quedó sin stock» y mantiene su validación."""
     sku = (sku or "").strip()
     for p in get_catalogo():
         if p.get("sku") == sku:
@@ -70,9 +74,11 @@ def buscar_en_catalogo(sku):
     return None
 
 
-def get_categorias():
-    """Lista de categorías de productos activos, del sistema principal."""
-    return _request("GET", "categorias-mayorista") or []
+def get_categorias(solo_disponibles=False):
+    """Lista de categorías de productos activos, del sistema principal.
+    solo_disponibles=True omite las que no tienen ningún producto con stock."""
+    params = {"solo_disponibles": "true"} if solo_disponibles else None
+    return _request("GET", "categorias-mayorista", params=params) or []
 
 
 def stock_disponible(sku):

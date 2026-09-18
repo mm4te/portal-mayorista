@@ -321,7 +321,6 @@ input:focus, textarea:focus, select:focus {
   letter-spacing: 0.02em;
 }
 .mini-badge.disp { background: #d4edda; color: #155724; }
-.mini-badge.sin  { background: #e9ecef; color: #6c757d; }
 
 /* Selector de cantidad (card del catálogo y filas del carrito) */
 .selector-cantidad {

@@ -48,23 +48,17 @@
         {% endif %}
         <div class="nombre">{{ p.nombre }}</div>
         <div class="precio">$ {{ p.precio_mayorista | pesos }}</div>
-        {% if p.disponible %}
-          <span class="mini-badge disp">Disponible</span>
-          <div class="selector-cantidad">
-            <button type="button" onclick="cambiarCantidad(this, -1)" aria-label="Restar">−</button>
-            <input type="number" class="input-cantidad" value="1" min="1" max="99" aria-label="Cantidad">
-            <button type="button" onclick="cambiarCantidad(this, 1)" aria-label="Sumar">+</button>
-          </div>
-          <button type="button" class="btn-agregar-carrito"
-                  data-sku="{{ p.sku }}" onclick="agregarAlCarrito(this)">
-            <i class="bi bi-cart-plus"></i> Agregar
-          </button>
-        {% else %}
-          <span class="mini-badge sin">Sin stock</span>
-          <button type="button" class="btn-agregar-carrito" disabled>
-            <i class="bi bi-cart-plus"></i> Sin stock
-          </button>
-        {% endif %}
+        {# La grilla lista solo productos disponibles: el sin stock no llega acá. #}
+        <span class="mini-badge disp">Disponible</span>
+        <div class="selector-cantidad">
+          <button type="button" onclick="cambiarCantidad(this, -1)" aria-label="Restar">−</button>
+          <input type="number" class="input-cantidad" value="1" min="1" max="99" aria-label="Cantidad">
+          <button type="button" onclick="cambiarCantidad(this, 1)" aria-label="Sumar">+</button>
+        </div>
+        <button type="button" class="btn-agregar-carrito"
+                data-sku="{{ p.sku }}" onclick="agregarAlCarrito(this)">
+          <i class="bi bi-cart-plus"></i> Agregar
+        </button>
       </div>
       {% endfor %}
     </div>

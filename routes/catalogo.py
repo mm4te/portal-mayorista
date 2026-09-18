@@ -22,11 +22,15 @@ def index():
     productos = []
     categorias = []
     try:
-        productos = comenda_api_client.get_catalogo()
-        categorias = comenda_api_client.get_categorias()
+        # solo_disponibles: el catálogo del portal muestra únicamente lo que
+        # se puede comprar; los productos sin stock no se listan.
+        productos = comenda_api_client.get_catalogo(solo_disponibles=True)
+        categorias = comenda_api_client.get_categorias(solo_disponibles=True)
     except ComendaAPIError as e:
         error = str(e)
         logger.warning("catalogo: %s", e)
+
+    productos = [p for p in productos if p.get("disponible")]
 
     if categoria and categoria.lower() != "todas":
         productos = [p for p in productos if (p.get("categoria") or "") == categoria]
