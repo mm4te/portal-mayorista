@@ -44,7 +44,9 @@ def index():
     productos = [p for p in productos if p.get("variantes")]
 
     if categoria and categoria.lower() != "todas":
-        productos = [p for p in productos if (p.get("categoria") or "") == categoria]
+        # Un producto puede tener varias categorías de TN a la vez (categorias
+        # es un array) — alcanza con que matchee cualquiera de ellas.
+        productos = [p for p in productos if categoria in (p.get("categorias") or [])]
 
     if q:
         ql = q.lower()
