@@ -76,7 +76,12 @@ def buscar_en_catalogo(sku):
     Se usa para resolver nombre/precio autoritativos al agregar al carrito —
     nunca confiamos en lo que manda el cliente. Busca sobre el catálogo
     completo (sin solo_disponibles) a propósito: así el carrito distingue
-    «no existe» de «se quedó sin stock» y mantiene su validación."""
+    «no existe» de «se quedó sin stock» y mantiene su validación.
+
+    precio_mayorista sale de LA VARIANTE (v), no del grupo: el grupo solo
+    expone el mínimo ("Desde $X" en la card) y no es el precio real de
+    ninguna variante en particular si difieren entre sí (ej. Individual
+    vs Set, o Chico/Mediano/Grande/Set Completo)."""
     sku = (sku or "").strip()
     if not sku:
         return None
@@ -89,7 +94,7 @@ def buscar_en_catalogo(sku):
                 return {
                     "sku": sku,
                     "nombre": nombre,
-                    "precio_mayorista": grupo.get("precio_mayorista"),
+                    "precio_mayorista": v.get("precio_mayorista"),
                     "disponible": bool(v.get("disponible")),
                 }
     return None

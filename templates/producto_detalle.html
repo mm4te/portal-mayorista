@@ -21,7 +21,10 @@
 
   <div class="detalle-info">
     <h1>{{ producto.nombre_base }}</h1>
-    <div class="detalle-precio">$ {{ producto.precio_mayorista | pesos }}</div>
+    <div class="detalle-precio">
+      {% if not producto.precio_uniforme %}<span class="precio-desde" id="precio-desde-label">Desde</span> {% endif %}$
+      <span id="precio-mostrado">{{ producto.precio_mayorista | pesos }}</span>
+    </div>
 
     <div class="detalle-descripcion">
       <h2>Descripción</h2>
@@ -91,6 +94,18 @@
     }
   }
 
+  // Formato $ 1.234,56 — igual al filtro 'pesos' de Jinja (server-side),
+  // para que el precio no "salte" de formato al cambiar de variante.
+  function formatearMoneda(valor) {
+    var n = Number(valor);
+    if (!isFinite(n)) n = 0;
+    return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Precio propio de cada variante (nunca asumir que todas cuestan lo
+  // mismo: Individual vs Set, Chico/Mediano/Grande/Set Completo, etc.).
+  var variantesData = {{ producto.variantes | tojson }};
+
   // Selector de variante obligatorio: hasta que no se elige una opción,
   // el botón de agregar queda deshabilitado (ver atributo 'disabled' inicial
   // en el HTML, para productos con más de una variante).
@@ -100,6 +115,15 @@
       btn.dataset.sku = this.value;
       btn.disabled = false;
       document.getElementById('btn-agregar-texto').textContent = 'Agregar al carrito';
+
+      // Precio de ESTA variante — reemplaza el "Desde $X" (mínimo del
+      // grupo) que se mostraba antes de elegir.
+      var variante = variantesData.find(function (v) { return v.sku === this.value; }, this);
+      if (variante) {
+        document.getElementById('precio-mostrado').textContent = formatearMoneda(variante.precio_mayorista);
+        var desdeLabel = document.getElementById('precio-desde-label');
+        if (desdeLabel) desdeLabel.style.display = 'none';
+      }
 
       document.querySelectorAll('.opcion-variante-label').forEach(function (l) {
         l.classList.remove('activa');

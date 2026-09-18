@@ -364,6 +364,16 @@ input:focus, textarea:focus, select:focus {
   color: var(--primary);
   margin-top: 4px;
 }
+/* "Desde $X": el producto tiene variantes con precios distintos (ej.
+   Individual vs Set, o Chico/Mediano/Grande) — el precio de la card es el
+   mínimo, no un precio fijo garantizado para cualquier variante. */
+.precio-desde {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
 .mini-badge {
   display: inline-block;
   margin-top: 6px;

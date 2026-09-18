@@ -49,7 +49,9 @@
           <div class="img-vacia"><i class="bi bi-image"></i></div>
         {% endif %}
         <div class="nombre">{{ p.nombre_base }}</div>
-        <div class="precio">$ {{ p.precio_mayorista | pesos }}</div>
+        <div class="precio">
+          {% if not p.precio_uniforme %}<span class="precio-desde">Desde</span> {% endif %}$ {{ p.precio_mayorista | pesos }}
+        </div>
 
         {% if unica %}
           {# Producto simple (una sola variante comprable): igual que antes,
