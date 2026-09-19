@@ -8,6 +8,7 @@ Mismo patrón que comenda-sistema: sqlite3 plano, get_conn() con Row factory,
 init_db() con CREATE IF NOT EXISTS + migraciones incrementales seguras.
 """
 import sqlite3
+import time
 from datetime import datetime
 
 from config import Config
@@ -125,6 +126,14 @@ def init_db():
         "pago_transferencia_titular": "",
         "pago_transferencia_cuit": "",
         "contacto_comprobante": "",
+        # B1: a diferencia de los datos de pago (vacíos hasta cargarlos a
+        # mano), esta arranca con texto real — si queda vacía la franja no
+        # se renderiza (ver get_anuncio_franja/base.html), así que un
+        # placeholder visible es mejor default que una franja en blanco.
+        "anuncio_franja_texto": (
+            "Precios + IVA · Mínimo de compra $XXX.XXX · Envíos a todo el "
+            "país · Entrega en 3 a 5 días hábiles"
+        ),
     }
     for k, v in _SEEDS.items():
         c.execute("INSERT OR IGNORE INTO configuracion (clave, valor) VALUES (?, ?)", (k, v))
@@ -156,6 +165,22 @@ def get_configs(prefijo=None):
     finally:
         conn.close()
     return {r["clave"]: r["valor"] for r in rows}
+
+
+# B1: se lee en TODAS las páginas (context_processor de app.py), así que se
+# cachea en memoria por proceso — sin esto sería una query de más por
+# request en todo el portal. TTL corto (no cache eterno) para que un cambio
+# de texto cargado a mano en `configuracion` se vea sin reiniciar el proceso.
+_ANUNCIO_CACHE_TTL = 60
+_anuncio_cache = {"valor": None, "leido_en": 0.0}
+
+
+def get_anuncio_franja():
+    ahora = time.monotonic()
+    if ahora - _anuncio_cache["leido_en"] > _ANUNCIO_CACHE_TTL:
+        _anuncio_cache["valor"] = get_config("anuncio_franja_texto", "")
+        _anuncio_cache["leido_en"] = ahora
+    return _anuncio_cache["valor"]
 
 
 def set_config(clave, valor):

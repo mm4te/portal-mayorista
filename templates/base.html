@@ -10,6 +10,9 @@
   {% block head %}{% endblock %}
 </head>
 <body>
+  {% if anuncio_franja_texto %}
+    <div class="franja-anuncios"><span>{{ anuncio_franja_texto }}</span></div>
+  {% endif %}
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="{{ url_for('home') }}">Comenda <span>Mayorista</span></a>
@@ -43,6 +46,27 @@
 
     {% block content %}{% endblock %}
   </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <strong>WhatsApp</strong>
+        <span class="footer-todo">TODO: cargar número de WhatsApp</span>
+      </div>
+      <div>
+        <strong>Email</strong>
+        <span class="footer-todo">TODO: cargar email de contacto</span>
+      </div>
+      <div>
+        <strong>Local</strong>
+        <span class="footer-todo">TODO: cargar dirección del local</span>
+      </div>
+      <div>
+        <strong>Horarios</strong>
+        <span class="footer-todo">TODO: cargar horarios de atención</span>
+      </div>
+    </div>
+  </footer>
   {% block scripts %}{% endblock %}
 </body>
 </html>

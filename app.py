@@ -55,6 +55,14 @@ def create_app():
         except Exception:
             return {"carrito_count": 0}
 
+    @app.context_processor
+    def _inject_anuncio():
+        from models import get_anuncio_franja
+        try:
+            return {"anuncio_franja_texto": get_anuncio_franja()}
+        except Exception:
+            return {"anuncio_franja_texto": ""}
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(catalogo_bp)
     app.register_blueprint(carrito_bp)

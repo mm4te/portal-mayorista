@@ -43,6 +43,41 @@ img, svg { max-width: 100%; }
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+/* ── Franja de anuncios (Grupo B / B1) ───────────────────────────────────────
+   Va ANTES de la topbar y, a diferencia de ella, NO es sticky: scrollea con
+   la página y se va (la topbar es la única franja fija, ver más abajo).
+   Texto editable sin deploy — vive en configuracion.anuncio_franja_texto
+   (models.get_anuncio_franja cachea la lectura en memoria). Si está vacía,
+   base.html directamente no renderiza el bloque. */
+.franja-anuncios {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  background: var(--primary);
+  color: #fff;
+}
+/* El texto va en un <span>, no como texto directo del flex container: un
+   item de flex (incluido el anónimo que crea un nodo de texto suelto) tiene
+   min-width:auto por default y no se achica por debajo de su ancho natural
+   — sin min-width:0 acá el texto se corta seco contra el overflow:hidden
+   del padre y el "…" de text-overflow nunca llega a mostrarse (mismo caso
+   que .pago-datos dd > span, ver más abajo). */
+.franja-anuncios span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+}
+@media (max-width: 560px) {
+  .franja-anuncios span { font-size: 0.72rem; }
+  .franja-anuncios { padding: 0 12px; }
+}
+
 /* ── Topbar ──────────────────────────────────────────────────────────────── */
 .topbar {
   background: #fff;
@@ -723,3 +758,25 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
    scroll horizontal contenido que ya usa carrito.html, para que una tabla
    ancha nunca empuje el ancho de la página entera. */
 .tabla-scroll { overflow-x: auto; }
+
+/* ── Pie de página (Grupo B / B2) ─────────────────────────────────────────── */
+.footer {
+  margin-top: 40px;
+  border-top: 1px solid var(--border-soft);
+  background: #fff;
+}
+.footer-inner {
+  max-width: var(--ancho);
+  margin: 0 auto;
+  padding: 28px 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+.footer-inner strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--heading);
+  margin-bottom: 4px;
+}
+.footer-todo { font-size: 0.85rem; color: var(--danger); font-style: italic; }
