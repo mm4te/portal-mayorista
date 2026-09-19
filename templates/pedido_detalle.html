@@ -104,6 +104,7 @@
         {% if not datos_pago.transferencia.cbu and not datos_pago.transferencia.alias %}
           <p class="hint">Los datos bancarios todavía no están cargados. Escribinos para coordinar.</p>
         {% endif %}
+        <p class="hint">SHUGA S.R.L. es la razón social de Comenda Deco.</p>
         <p>
           Una vez hecha la transferencia, enviá el comprobante
           {% if datos_pago.contacto_comprobante %}a <strong>{{ datos_pago.contacto_comprobante }}</strong>{% else %}a nuestro contacto habitual{% endif %},

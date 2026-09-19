@@ -44,11 +44,18 @@
       <div class="producto-card-mayorista{{ '' if unica else ' clickable' }}"
            {% if not unica %}onclick="location.href='{{ url_for('catalogo.producto_detalle', product_id=p.product_id) }}'"{% endif %}>
         {% if p.imagen_url %}
-          <img src="{{ p.imagen_url }}" class="imagen-principal" alt="{{ p.nombre_base }}" loading="lazy">
+          <img src="{{ p.imagen_url }}" class="imagen-principal" alt="{{ p.nombre_base }}" loading="lazy"
+               onerror="imgFallback(this)">
         {% else %}
           <div class="img-vacia"><i class="bi bi-image"></i></div>
         {% endif %}
         <div class="nombre">{{ p.nombre_base }}</div>
+        {% if unica %}
+          {# C1: con una sola variante hay un único SKU válido para toda la
+             card. Con varias, cada variante tiene el suyo — mostrar uno acá
+             sería arbitrario, el código real se ve recién en la ficha. #}
+          <div class="card-sku">SKU: {{ p.variantes[0].sku }}</div>
+        {% endif %}
         <div class="precio">
           {% if not p.precio_uniforme %}<span class="precio-desde">Desde</span> {% endif %}$ {{ p.precio_mayorista | pesos }}
         </div>

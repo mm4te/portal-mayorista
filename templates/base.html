@@ -90,6 +90,20 @@
       icon.className = mostrar ? 'bi bi-eye-slash' : 'bi bi-eye';
       btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
     }
+
+    // C4: una imagen de producto rota (404, etc.) cae al mismo placeholder
+    // gris que ya se usa cuando el producto no tiene foto (.img-vacia), en
+    // vez de mostrar el ícono roto + alt del navegador. Reemplaza el <img>
+    // por el div — si el <img> tenía id (la imagen principal de la ficha,
+    // que el selector de variante actualiza), el div se queda con el mismo
+    // id para no romper esa referencia en usos posteriores.
+    function imgFallback(img, grande) {
+      var div = document.createElement('div');
+      div.className = 'img-vacia' + (grande ? ' grande' : '');
+      div.innerHTML = '<i class="bi bi-image"></i>';
+      if (img.id) div.id = img.id;
+      img.replaceWith(div);
+    }
   </script>
   {% block scripts %}{% endblock %}
 </body>

@@ -5,22 +5,30 @@
 {% block content %}
 {% if error %}
   <div class="flash-messages"><p class="error">No se pudo cargar el producto: {{ error }}</p></div>
-  <p><a href="{{ url_for('catalogo.index') }}">← Volver al catálogo</a></p>
+  <p><a href="{{ url_for('catalogo.index') }}" id="volver-catalogo">← Volver al catálogo</a></p>
 {% else %}
 
-<a href="{{ url_for('catalogo.index') }}" class="volver-link">← Volver al catálogo</a>
+<a href="{{ url_for('catalogo.index') }}" class="volver-link" id="volver-catalogo">← Volver al catálogo</a>
 
 <div class="detalle-layout">
   <div class="detalle-imagen">
     {% if producto.imagen_url %}
-      <img id="imagen-principal" src="{{ producto.imagen_url }}" alt="{{ producto.nombre_base }}">
+      <img id="imagen-principal" src="{{ producto.imagen_url }}" alt="{{ producto.nombre_base }}"
+           onerror="imgFallback(this, true)">
     {% else %}
-      <div class="img-vacia grande"><i class="bi bi-image"></i></div>
+      <div class="img-vacia grande" id="imagen-principal"><i class="bi bi-image"></i></div>
     {% endif %}
   </div>
 
   <div class="detalle-info">
     <h1>{{ producto.nombre_base }}</h1>
+    {# C1: con una sola variante el SKU es inequívoco. Con varias, todavía
+       no hay ninguna elegida (el botón sigue deshabilitado) — mostrar la
+       de variantes[0] sería sugerir que esa es la que se va a agregar sin
+       serlo; se actualiza al elegir una opción, igual que el precio. #}
+    <div class="detalle-sku">
+      SKU: <span id="sku-mostrado">{{ producto.variantes[0].sku if producto.variantes|length == 1 else '—' }}</span>
+    </div>
     <div class="detalle-precio">
       {% if not producto.precio_uniforme %}<span class="precio-desde" id="precio-desde-label">Desde</span> {% endif %}$
       <span id="precio-mostrado">{{ producto.precio_mayorista | pesos }}</span>
@@ -35,6 +43,9 @@
             <input type="radio" name="variante" class="opcion-variante"
                    value="{{ v.sku }}" data-imagen="{{ v.imagen_url or producto.imagen_url or '' }}">
             <span>{{ v.atributo or ('Opción ' ~ loop.index) }}</span>
+            {# C7: antes había que ir clickeando cada opción para ver cómo
+               cambiaba el precio de arriba — ahora cada chip lo trae puesto. #}
+            <span class="opcion-variante-precio">$ {{ v.precio_mayorista | pesos }}</span>
           </label>
         {% endfor %}
       </div>
@@ -115,6 +126,7 @@
       btn.dataset.sku = this.value;
       btn.disabled = false;
       document.getElementById('btn-agregar-texto').textContent = 'Agregar al carrito';
+      document.getElementById('sku-mostrado').textContent = this.value;
 
       // Precio de ESTA variante — reemplaza el "Desde $X" (mínimo del
       // grupo) que se mostraba antes de elegir.
@@ -136,6 +148,21 @@
       }
     });
   });
+
+  // C8: el link fijo a /catalogo perdía la categoría, la búsqueda y el
+  // scroll con los que se venía. Si el referrer es el catálogo, un
+  // history.back() vuelve exactamente a ese estado (el navegador lo
+  // restaura solo); si no (se llegó por otro lado, ej. un link directo),
+  // el href a /catalogo queda como fallback normal.
+  (function () {
+    var link = document.getElementById('volver-catalogo');
+    if (link && document.referrer && document.referrer.indexOf('/catalogo') !== -1) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        history.back();
+      });
+    }
+  })();
 
   function agregarDesdeDetalle(btn) {
     if (btn.disabled) return;

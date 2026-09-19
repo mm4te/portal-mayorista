@@ -452,6 +452,13 @@ input:focus, textarea:focus, select:focus {
      overflow:hidden es lo que necesita -webkit-line-clamp para truncar. */
   overflow: hidden;
 }
+/* C1: el código por el que preguntan los clientes mayoristas, no solo el
+   nombre. Solo en la card de variante única — ver comentario en catalogo.html. */
+.card-sku {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
 .producto-card-mayorista .precio {
   font-size: 0.9rem;
   font-weight: 700;
@@ -693,6 +700,8 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .detalle-info h1 { font-size: 1.4rem; margin-bottom: 8px; }
+/* C1: el código por el que preguntan los clientes mayoristas. */
+.detalle-sku { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; }
 .detalle-precio {
   font-size: 1.4rem;
   font-weight: 700;
@@ -713,7 +722,11 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .opciones-variante { display: flex; flex-wrap: wrap; gap: 8px; }
 .opcion-variante-label {
   position: relative;
-  padding: 8px 16px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 16px;
   border: 1.5px solid var(--border-input);
   border-radius: 999px;
   font-size: 0.88rem;
@@ -729,6 +742,14 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   background: var(--primary);
   color: #fff;
 }
+/* C7: precio propio de cada variante, en su chip — antes había que ir
+   clickeando una por una para ver cómo cambiaba el precio de arriba. */
+.opcion-variante-precio {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.opcion-variante-label.activa .opcion-variante-precio { color: rgba(255, 255, 255, 0.85); }
 
 .detalle-cantidad { justify-content: flex-start; margin: 0 0 16px; }
 
