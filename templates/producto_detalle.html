@@ -26,17 +26,6 @@
       <span id="precio-mostrado">{{ producto.precio_mayorista | pesos }}</span>
     </div>
 
-    <div class="detalle-descripcion">
-      <h2>Descripción</h2>
-      {% if producto.descripcion_larga %}
-        <div class="descripcion-texto">{{ producto.descripcion_larga | safe }}</div>
-      {% else %}
-        <p class="texto-muted">
-          Descripción no disponible. Consultanos por WhatsApp para más detalles sobre este producto.
-        </p>
-      {% endif %}
-    </div>
-
     {% if producto.variantes|length > 1 %}
     <div class="selector-variantes">
       <h2>Elegí una opción</h2>
@@ -65,6 +54,17 @@
       <i class="bi bi-cart-plus"></i>
       <span id="btn-agregar-texto">{% if producto.variantes|length > 1 %}Elegí una opción{% else %}Agregar al carrito{% endif %}</span>
     </button>
+
+    <div class="detalle-descripcion">
+      <h2>Descripción</h2>
+      {% if producto.descripcion_larga %}
+        <div class="descripcion-texto">{{ producto.descripcion_larga | safe }}</div>
+      {% else %}
+        <p class="texto-muted">
+          Descripción no disponible. Consultanos por WhatsApp para más detalles sobre este producto.
+        </p>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% endif %}

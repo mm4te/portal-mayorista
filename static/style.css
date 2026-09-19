@@ -563,7 +563,9 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   color: var(--primary);
   margin-bottom: 18px;
 }
-.detalle-descripcion { margin-bottom: 20px; }
+/* Ahora va al final (después del botón de agregar) — separación propia
+   arriba, ya que no hereda el margin-bottom de lo que la precedía antes. */
+.detalle-descripcion { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-soft); }
 .detalle-descripcion h2 { font-size: 0.95rem; margin-bottom: 8px; }
 .descripcion-texto { font-size: 0.92rem; color: var(--dark); line-height: 1.6; }
 .descripcion-texto p { margin-bottom: 10px; }
