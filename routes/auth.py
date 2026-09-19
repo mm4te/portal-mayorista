@@ -159,8 +159,9 @@ def login():
 
         session.clear()
         session["cliente_id"] = cli["id"]
+        # E2: el saludo pasó a la barra superior (ver base.html), ya no hace
+        # falta un flash de bienvenida en cada login.
         session["epoch"] = cli["sesion_epoch"]
-        flash(f"¡Hola, {cli['nombre_empresa']}!", "success")
         return redirect(url_for("catalogo.index"))
 
     return render_template("login.html", email="")

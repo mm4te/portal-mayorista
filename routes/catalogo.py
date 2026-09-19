@@ -39,6 +39,12 @@ def index():
         error = str(e)
         logger.warning("catalogo: %s", e)
 
+    # E1: "Sin categorizar" no se muestra en la sidebar del cliente — es la
+    # categoría default de TN para productos sin categoría propia, no algo
+    # que el mayorista tenga que ver como opción de filtro. Solo se oculta
+    # de esta vista, no se borra nada en comenda-sistema.
+    categorias = [c for c in categorias if c != "Sin categorizar"]
+
     # Red de seguridad: un grupo sin ninguna variante (ej. API vieja sin
     # filtrar) no debe mostrarse.
     productos = [p for p in productos if p.get("variantes")]

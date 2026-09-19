@@ -84,6 +84,16 @@
     else { badge.style.display = 'none'; }
   }
 
+  function mostrarErrorInline(el, mensaje) {
+    var siguiente = el.nextElementSibling;
+    if (siguiente && siguiente.classList.contains('error-inline')) siguiente.remove();
+    var span = document.createElement('span');
+    span.className = 'error-inline';
+    span.textContent = mensaje;
+    el.insertAdjacentElement('afterend', span);
+    setTimeout(function () { span.remove(); }, 4000);
+  }
+
   function _postCarrito(url, sku, cantidad) {
     var body = { sku: sku };
     if (cantidad != null) body.cantidad = cantidad;
@@ -107,17 +117,18 @@
     var cantidad = Math.max(1, Math.min(99, parseInt(input.value, 10) || 1));
     input.value = cantidad;
 
+    var contenedor = input.closest('.selector-cantidad');
     _postCarrito("{{ url_for('carrito.actualizar') }}", sku, cantidad)
       .then(function (res) {
         if (!res.data || !res.data.ok) {
-          alert((res.data && res.data.error) || 'No se pudo actualizar.');
+          mostrarErrorInline(contenedor, (res.data && res.data.error) || 'No se pudo actualizar.');
           return;
         }
         fila.querySelector('.col-subtotal').textContent = fmtPesos(res.data.item_subtotal);
         document.getElementById('carrito-total').textContent = fmtPesos(res.data.total);
         actualizarBadgeCarrito(res.data.total_items);
       })
-      .catch(function () { alert('No se pudo actualizar. Revisá tu conexión.'); });
+      .catch(function () { mostrarErrorInline(contenedor, 'No se pudo actualizar. Revisá tu conexión.'); });
   }
 
   function quitarItem(btn) {
@@ -125,7 +136,7 @@
     _postCarrito("{{ url_for('carrito.quitar') }}", fila.dataset.sku, null)
       .then(function (res) {
         if (!res.data || !res.data.ok) {
-          alert((res.data && res.data.error) || 'No se pudo quitar el ítem.');
+          mostrarErrorInline(btn, (res.data && res.data.error) || 'No se pudo quitar el ítem.');
           return;
         }
         fila.remove();
@@ -133,7 +144,7 @@
         if (res.data.total_items <= 0) { window.location.reload(); return; }
         document.getElementById('carrito-total').textContent = fmtPesos(res.data.total);
       })
-      .catch(function () { alert('No se pudo quitar el ítem. Revisá tu conexión.'); });
+      .catch(function () { mostrarErrorInline(btn, 'No se pudo quitar el ítem. Revisá tu conexión.'); });
   }
 </script>
 {% endblock %}

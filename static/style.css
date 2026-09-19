@@ -119,6 +119,9 @@ a:hover { text-decoration: underline; }
 .topbar-nav { display: flex; align-items: center; gap: 18px; }
 .topbar-nav a { color: var(--gray); font-weight: 600; font-size: 0.9rem; }
 .topbar-nav a:hover { color: var(--primary); text-decoration: none; }
+/* E2: nombre de la empresa logueada — reemplaza el flash verde de saludo,
+   que se repetía en cada login y desaparecía; esto queda siempre visible. */
+.topbar-empresa { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .page {
@@ -178,6 +181,16 @@ input:focus, textarea:focus, select:focus {
 }
 .password-toggle-btn:hover { color: var(--primary); }
 
+/* E4: mensajes de error en línea del carrito/catálogo, al lado del control
+   que falló — reemplazan los alert() nativos. */
+.error-inline {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
 .btn {
   display: inline-block;
   padding: 11px 18px;
@@ -216,6 +229,10 @@ input:focus, textarea:focus, select:focus {
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: 500;
+  /* Bug preexistente encontrado al verificar el Grupo E a 375px: un error
+     de ComendaAPIError trae una URL/excepción larga sin espacios (ej.
+     "NewConnectionError(...)") que sin esto desborda la página entera. */
+  overflow-wrap: break-word;
 }
 .flash-messages .success { background: #d4edda; color: #155724; }
 .flash-messages .error   { background: #f8d7da; color: #721c24; }
@@ -764,6 +781,12 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 @media (max-width: 560px) {
   .topbar-inner { flex-direction: row; align-items: center; gap: 10px; flex-wrap: wrap; }
+  /* El nombre de empresa (E2) puede ser largo y sin límite de longitud —
+     en el ancho ya apretado de mobile, junto a los 4 links de nav, un
+     nombre largo desborda la topbar (probado con Playwright a 375px:
+     42px de overflow horizontal). Se prioriza la navegación acá; el
+     nombre de la empresa sigue visible desktop/tablet. */
+  .topbar-empresa { display: none; }
   .card { padding: 20px; }
   .page { padding-left: 14px; padding-right: 14px; }
   .grilla-catalogo { grid-template-columns: repeat(2, minmax(0, 1fr)); }

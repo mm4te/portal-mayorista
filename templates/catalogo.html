@@ -120,6 +120,16 @@
     }
   }
 
+  function mostrarErrorInline(el, mensaje) {
+    var siguiente = el.nextElementSibling;
+    if (siguiente && siguiente.classList.contains('error-inline')) siguiente.remove();
+    var span = document.createElement('span');
+    span.className = 'error-inline';
+    span.textContent = mensaje;
+    el.insertAdjacentElement('afterend', span);
+    setTimeout(function () { span.remove(); }, 4000);
+  }
+
   function mostrarToastAgregado(btn) {
     var textoOriginal = btn.innerHTML;
     btn.innerHTML = '<i class="bi bi-check-lg"></i> Agregado';
@@ -150,12 +160,12 @@
           mostrarToastAgregado(btn);
           if (input) input.value = 1;
         } else {
-          alert((res.data && res.data.error) || 'No se pudo agregar el producto.');
+          mostrarErrorInline(btn, (res.data && res.data.error) || 'No se pudo agregar el producto.');
         }
       })
       .catch(function () {
         btn.disabled = false;
-        alert('No se pudo agregar el producto. Revisá tu conexión e intentá de nuevo.');
+        mostrarErrorInline(btn, 'No se pudo agregar el producto. Revisá tu conexión e intentá de nuevo.');
       });
   }
 </script>
