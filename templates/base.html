@@ -67,6 +67,19 @@
       </div>
     </div>
   </footer>
+  <script>
+    // D2: toggle de ver/ocultar contraseña — global porque lo usan login y
+    // registro (varios campos en registro). Requiere la estructura
+    // .password-toggle-wrap > input + button.password-toggle-btn.
+    function togglePassword(btn) {
+      var input = btn.previousElementSibling;
+      var icon = btn.querySelector('i');
+      var mostrar = input.type === 'password';
+      input.type = mostrar ? 'text' : 'password';
+      icon.className = mostrar ? 'bi bi-eye-slash' : 'bi bi-eye';
+      btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    }
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

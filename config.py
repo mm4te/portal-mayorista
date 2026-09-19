@@ -27,6 +27,17 @@ class Config:
     REGISTRO_MAX_POR_IP = 5
     REGISTRO_VENTANA_MIN = 60
 
+    # ── Recuperación de contraseña (D1) ─────────────────────────────────────
+    RESET_TOKEN_TTL_MIN = 60
+    RESET_MAX_SOLICITUDES_IP = 5
+    RESET_MAX_SOLICITUDES_EMAIL = 3
+    RESET_SOLICITUDES_VENTANA_MIN = 60
+    RESET_MAX_VALIDACIONES_IP = 10
+    RESET_VALIDACIONES_VENTANA_MIN = 60
+    # Sin esto (o fuera de app.debug), /recuperar no tiene forma de "enviar"
+    # nada — ver services/mailer.py. Se prende a propósito solo en desarrollo.
+    RESET_LOG_LINK_FALLBACK = os.getenv("RESET_LOG_LINK_FALLBACK", "false").lower() == "true"
+
 
 def validar_config():
     faltantes = [k for k in ("SECRET_KEY", "INTERNAL_API_KEY") if not getattr(Config, k)]

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Recuperar contraseña · Portal Mayorista{% endblock %}
+{% block page_class %}narrow{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Recuperar contraseña</h1>
+  <p class="subtitle">
+    Ingresá el email de tu cuenta y te mandamos instrucciones para elegir una nueva contraseña.
+  </p>
+
+  <form method="POST" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autofocus>
+    </div>
+    <button type="submit" class="btn btn-block">Enviar instrucciones</button>
+  </form>
+
+  <p class="form-foot">
+    <a href="{{ url_for('auth.login') }}">Volver a ingresar</a>
+  </p>
+</div>
+{% endblock %}

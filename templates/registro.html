@@ -8,6 +8,9 @@
   <p class="subtitle">
     Completá tus datos. Revisamos cada solicitud antes de habilitar el acceso.
   </p>
+  <!-- D3: plazo orientativo — placeholder de contenido, como el texto de la
+       franja de anuncios (B1); ajustar si el plazo real es otro. -->
+  <p class="subtitle">Te contestamos en un plazo de 24 a 48 horas hábiles.</p>
 
   <form method="POST" class="stack">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -32,12 +35,20 @@
     </div>
     <div class="field">
       <label for="password">Contraseña *</label>
-      <input type="password" id="password" name="password" required minlength="8">
+      <div class="password-toggle-wrap">
+        <input type="password" id="password" name="password" required minlength="8">
+        <button type="button" class="password-toggle-btn" onclick="togglePassword(this)"
+                aria-label="Mostrar contraseña" tabindex="-1"><i class="bi bi-eye"></i></button>
+      </div>
       <span class="hint">Mínimo 8 caracteres.</span>
     </div>
     <div class="field">
       <label for="password2">Repetir contraseña *</label>
-      <input type="password" id="password2" name="password2" required minlength="8">
+      <div class="password-toggle-wrap">
+        <input type="password" id="password2" name="password2" required minlength="8">
+        <button type="button" class="password-toggle-btn" onclick="togglePassword(this)"
+                aria-label="Mostrar contraseña" tabindex="-1"><i class="bi bi-eye"></i></button>
+      </div>
     </div>
     <button type="submit" class="btn btn-block">Crear cuenta</button>
   </form>

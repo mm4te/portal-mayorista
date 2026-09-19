@@ -9,7 +9,7 @@ init_db() con CREATE IF NOT EXISTS + migraciones incrementales seguras.
 """
 import sqlite3
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from config import Config
 
@@ -110,7 +110,47 @@ def init_db():
         fecha TEXT NOT NULL
     )''')
 
+    # ── Recuperación de contraseña (D1) ──────────────────────────────────────
+    # Se guarda el HASH del token, nunca el token en sí (mismo motivo que
+    # password_hash en clientes_mayoristas): si alguien lee la tabla no puede
+    # armar un link de reset válido con lo que ve.
+    c.execute('''CREATE TABLE IF NOT EXISTS password_resets (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        cliente_id  INTEGER NOT NULL,
+        token_hash  TEXT NOT NULL,
+        creado      TEXT NOT NULL,
+        expira      TEXT NOT NULL,
+        usado       INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (cliente_id) REFERENCES clientes_mayoristas(id) ON DELETE CASCADE
+    )''')
+
+    # Rate limiting de todo el flujo de reset (solicitud por IP, solicitud por
+    # email, validación de token por IP) — mismo patrón simple que
+    # registro_intentos, con una columna `tipo` para no triplicar la tabla.
+    c.execute('''CREATE TABLE IF NOT EXISTS reset_intentos (
+        id    INTEGER PRIMARY KEY AUTOINCREMENT,
+        tipo  TEXT NOT NULL,
+        clave TEXT NOT NULL,
+        fecha TEXT NOT NULL
+    )''')
+
+    # Invalidación de sesiones activas al cambiar la contraseña (D1.c): las
+    # sesiones acá son cookies firmadas del lado del cliente, no hay tabla de
+    # sesiones server-side — así que la única forma de "cerrar" una sesión ya
+    # emitida es que deje de ser válida. sesion_epoch se guarda en la cookie
+    # al loguear (session['epoch']); cargar_cliente() compara contra el valor
+    # actual en la fila y descarta la sesión si no coincide. Al resetear la
+    # contraseña se incrementa, así que cualquier cookie vieja (con el epoch
+    # anterior) deja de servir en el próximo request, sin importar en qué
+    # dispositivo esté.
+    _cols_clientes = [r[1] for r in c.execute("PRAGMA table_info(clientes_mayoristas)").fetchall()]
+    if "sesion_epoch" not in _cols_clientes:
+        c.execute("ALTER TABLE clientes_mayoristas ADD COLUMN sesion_epoch INTEGER NOT NULL DEFAULT 0")
+
     c.execute("CREATE INDEX IF NOT EXISTS idx_cli_may_estado ON clientes_mayoristas(estado)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_pwd_reset_cliente ON password_resets(cliente_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_pwd_reset_hash ON password_resets(token_hash)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_reset_intentos ON reset_intentos(tipo, clave, fecha)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_ped_may_cliente ON pedidos_mayoristas(cliente_mayorista_id)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_ped_may_estado ON pedidos_mayoristas(estado)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_ped_items_pedido ON pedido_mayorista_items(pedido_id)")
@@ -318,6 +358,112 @@ def eliminar_cliente(cliente_id):
         cur = conn.execute("DELETE FROM clientes_mayoristas WHERE id = ?", (cliente_id,))
         conn.commit()
         return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+# ── Recuperación de contraseña (D1) ─────────────────────────────────────────
+
+def crear_password_reset(cliente_id, token_hash, ttl_min):
+    """Invalida cualquier token vigente anterior del cliente (a lo sumo uno
+    "vivo" por vez, evita que queden varios links activos si pide de nuevo)
+    y crea el nuevo. Guarda solo el hash — ver comentario en init_db()."""
+    conn = get_conn()
+    try:
+        ahora = datetime.now()
+        conn.execute(
+            "UPDATE password_resets SET usado = 1 WHERE cliente_id = ? AND usado = 0",
+            (cliente_id,)
+        )
+        conn.execute(
+            "INSERT INTO password_resets (cliente_id, token_hash, creado, expira, usado) "
+            "VALUES (?, ?, ?, ?, 0)",
+            (
+                cliente_id, token_hash,
+                ahora.strftime("%Y-%m-%d %H:%M:%S"),
+                (ahora + timedelta(minutes=ttl_min)).strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def validar_token_reset(token_hash):
+    """Token vigente (no usado, no vencido) -> cliente_id. Si no, None.
+    No marca nada: la validación en GET /reset/<token> es de solo lectura,
+    el token se consume recién al efectivamente cambiar la contraseña."""
+    conn = get_conn()
+    try:
+        ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row = conn.execute(
+            "SELECT cliente_id FROM password_resets "
+            "WHERE token_hash = ? AND usado = 0 AND expira > ? "
+            "ORDER BY id DESC LIMIT 1",
+            (token_hash, ahora)
+        ).fetchone()
+        return row["cliente_id"] if row else None
+    finally:
+        conn.close()
+
+
+def consumir_password_reset(cliente_id, token_hash, nuevo_password_hash):
+    """Revalida el token (podría haber vencido u otro reset haberlo pisado
+    entre el GET y el POST) y, si sigue vivo, lo marca usado, actualiza la
+    contraseña e incrementa sesion_epoch para tirar abajo cualquier sesión
+    activa de esa cuenta (D1.c) — todo en una transacción."""
+    conn = get_conn()
+    conn.isolation_level = None
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row = conn.execute(
+            "SELECT id FROM password_resets "
+            "WHERE cliente_id = ? AND token_hash = ? AND usado = 0 AND expira > ?",
+            (cliente_id, token_hash, ahora)
+        ).fetchone()
+        if row is None:
+            conn.execute("ROLLBACK")
+            return False
+        conn.execute("UPDATE password_resets SET usado = 1 WHERE id = ?", (row["id"],))
+        conn.execute(
+            "UPDATE clientes_mayoristas "
+            "SET password_hash = ?, sesion_epoch = sesion_epoch + 1 WHERE id = ?",
+            (nuevo_password_hash, cliente_id)
+        )
+        conn.execute("COMMIT")
+        return True
+    except Exception:
+        try:
+            conn.execute("ROLLBACK")
+        except Exception:
+            pass
+        raise
+    finally:
+        conn.close()
+
+
+def reset_rate_limit_permitido(tipo, clave, max_intentos, ventana_min):
+    limite = (datetime.now() - timedelta(minutes=ventana_min)).strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_conn()
+    try:
+        n = conn.execute(
+            "SELECT COUNT(*) FROM reset_intentos WHERE tipo = ? AND clave = ? AND fecha >= ?",
+            (tipo, clave, limite)
+        ).fetchone()[0]
+        return n < max_intentos
+    finally:
+        conn.close()
+
+
+def reset_registrar_intento(tipo, clave):
+    conn = get_conn()
+    try:
+        conn.execute(
+            "INSERT INTO reset_intentos (tipo, clave, fecha) VALUES (?, ?, ?)",
+            (tipo, clave, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        )
+        conn.commit()
     finally:
         conn.close()
 

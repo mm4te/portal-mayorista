@@ -1,5 +1,7 @@
-# routes/auth.py — registro, login y logout de clientes mayoristas
+# routes/auth.py — registro, login, logout y recuperación de contraseña
 import re
+import secrets
+import hashlib
 import logging
 from datetime import datetime, timedelta
 
@@ -9,14 +11,23 @@ from flask import (
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import Config
-from models import get_conn, get_cliente_por_email, crear_cliente
+from models import (
+    get_conn, get_cliente_por_email, crear_cliente,
+    crear_password_reset, validar_token_reset, consumir_password_reset,
+    reset_rate_limit_permitido, reset_registrar_intento,
+)
 from services.comenda_api_client import avisar_cuenta_nueva
+from services.mailer import enviar_email_reset
 
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _hash_token(token):
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 # ── Rate limiting del registro ──────────────────────────────────────────────
@@ -148,6 +159,7 @@ def login():
 
         session.clear()
         session["cliente_id"] = cli["id"]
+        session["epoch"] = cli["sesion_epoch"]
         flash(f"¡Hola, {cli['nombre_empresa']}!", "success")
         return redirect(url_for("catalogo.index"))
 
@@ -159,3 +171,109 @@ def logout():
     session.clear()
     flash("Cerraste sesión.", "success")
     return redirect(url_for("auth.login"))
+
+
+# ── Recuperación de contraseña (D1) ─────────────────────────────────────────
+
+@auth_bp.route("/recuperar", methods=["GET", "POST"])
+def recuperar():
+    if g.get("cliente_id"):
+        return redirect(url_for("catalogo.index"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        ip = request.remote_addr or "0.0.0.0"
+
+        # Respuesta genérica siempre — nunca revela si el email existe.
+        # d1.a/d1.h: el intento de "enviar" (con su fallback de log detrás de
+        # debug/flag, o su falla ruidosa si no hay nada configurado) solo se
+        # dispara cuando la cuenta existe y no está limitada por rate limit;
+        # si eso revienta, el 500 resultante es distinto de la respuesta
+        # genérica — tradeoff explícito, documentado en el reporte del grupo.
+        if reset_rate_limit_permitido(
+            "solicitud_ip", ip, Config.RESET_MAX_SOLICITUDES_IP, Config.RESET_SOLICITUDES_VENTANA_MIN
+        ):
+            reset_registrar_intento("solicitud_ip", ip)
+            cli = get_cliente_por_email(email) if email else None
+            # D1.d: se permite pedir/usar el reset con la cuenta en cualquier
+            # estado (pendiente/rechazada/suspendida incluidas) — el login
+            # sigue bloqueando por estado después, sin importar la contraseña.
+            if cli and reset_rate_limit_permitido(
+                "solicitud_email", email, Config.RESET_MAX_SOLICITUDES_EMAIL,
+                Config.RESET_SOLICITUDES_VENTANA_MIN
+            ):
+                reset_registrar_intento("solicitud_email", email)
+                token = secrets.token_urlsafe(32)
+                crear_password_reset(cli["id"], _hash_token(token), Config.RESET_TOKEN_TTL_MIN)
+                link = url_for("auth.reset_validar", token=token, _external=True)
+                enviar_email_reset(cli["email"], link)
+
+        flash(
+            "Si ese email tiene una cuenta con nosotros, te mandamos instrucciones "
+            "para recuperar la contraseña.", "info"
+        )
+        return redirect(url_for("auth.login"))
+
+    return render_template("recuperar.html")
+
+
+@auth_bp.route("/reset/<token>")
+def reset_validar(token):
+    """Primer y único GET con el token en la URL. No renderiza nada del
+    layout normal (nada de CSS de jsdelivr) — solo valida y redirige, así el
+    token nunca queda expuesto como Referer de un pedido a un tercero (D1.b:
+    de las dos alternativas que planteamos, esta — token en sesión del lado
+    del servidor en vez de en la URL — es la que se implementó)."""
+    ip = request.remote_addr or "0.0.0.0"
+    if not reset_rate_limit_permitido(
+        "validacion_ip", ip, Config.RESET_MAX_VALIDACIONES_IP, Config.RESET_VALIDACIONES_VENTANA_MIN
+    ):
+        flash("Demasiados intentos. Probá de nuevo más tarde.", "error")
+        return redirect(url_for("auth.login"))
+    reset_registrar_intento("validacion_ip", ip)
+
+    token_hash = _hash_token(token)
+    cliente_id = validar_token_reset(token_hash)
+    if cliente_id is None:
+        flash("El link de recuperación no es válido o ya venció. Pedí uno nuevo.", "error")
+        return redirect(url_for("auth.recuperar"))
+
+    session["reset_cliente_id"] = cliente_id
+    session["reset_token_hash"] = token_hash
+    return redirect(url_for("auth.reset_completar"))
+
+
+@auth_bp.route("/reset/completar", methods=["GET", "POST"])
+def reset_completar():
+    cliente_id = session.get("reset_cliente_id")
+    token_hash = session.get("reset_token_hash")
+    if not cliente_id or not token_hash:
+        flash("Tu sesión de recuperación expiró. Pedí un link nuevo.", "error")
+        return redirect(url_for("auth.recuperar"))
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        password2 = request.form.get("password2", "")
+
+        errores = []
+        if len(password) < 8:  # D1.e: misma política que el registro
+            errores.append("La contraseña debe tener al menos 8 caracteres.")
+        if password != password2:
+            errores.append("Las contraseñas no coinciden.")
+        if errores:
+            for e in errores:
+                flash(e, "error")
+            return render_template("reset_completar.html")
+
+        ok = consumir_password_reset(cliente_id, token_hash, generate_password_hash(password))
+        session.pop("reset_cliente_id", None)
+        session.pop("reset_token_hash", None)
+        if not ok:
+            flash("El link de recuperación no es válido o ya venció. Pedí uno nuevo.", "error")
+            return redirect(url_for("auth.recuperar"))
+
+        # D1.f
+        flash("Contraseña actualizada. Ya podés ingresar.", "success")
+        return redirect(url_for("auth.login"))
+
+    return render_template("reset_completar.html")
