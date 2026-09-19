@@ -5,18 +5,30 @@
 {% block content %}
 <div class="card">
   <h1>Recuperar contraseña</h1>
-  <p class="subtitle">
-    Ingresá el email de tu cuenta y te mandamos instrucciones para elegir una nueva contraseña.
-  </p>
 
-  <form method="POST" class="stack">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="field">
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" required autofocus>
+  {% if sin_servicio %}
+    <div class="note">
+      Por ahora la recuperación automática no está disponible.
+      {% if contacto_whatsapp %}
+        Escribinos al WhatsApp {{ contacto_whatsapp }} y te la restablecemos.
+      {% else %}
+        Contactate con nosotros y te la restablecemos.
+      {% endif %}
     </div>
-    <button type="submit" class="btn btn-block">Enviar instrucciones</button>
-  </form>
+  {% else %}
+    <p class="subtitle">
+      Ingresá el email de tu cuenta y te mandamos instrucciones para elegir una nueva contraseña.
+    </p>
+
+    <form method="POST" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autofocus>
+      </div>
+      <button type="submit" class="btn btn-block">Enviar instrucciones</button>
+    </form>
+  {% endif %}
 
   <p class="form-foot">
     <a href="{{ url_for('auth.login') }}">Volver a ingresar</a>

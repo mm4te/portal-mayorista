@@ -38,6 +38,21 @@ class Config:
     # nada — ver services/mailer.py. Se prende a propósito solo en desarrollo.
     RESET_LOG_LINK_FALLBACK = os.getenv("RESET_LOG_LINK_FALLBACK", "false").lower() == "true"
 
+    # Proveedor de mail real (D1.h) — ninguna cargada todavía. Su sola
+    # presencia es lo que services.mailer.mail_configurado() usa para saber
+    # si ya hay con qué mandar el mail de recuperación o si /recuperar tiene
+    # que mostrar el mensaje de "escribinos al WhatsApp" en su lugar — el
+    # modo se detecta por esto, no por una constante en el código. OJO: el
+    # día que se cargue SMTP_HOST, además hay que pedir que se conecte el
+    # envío real acá — mail_configurado() en True sin eso todavía haría que
+    # /recuperar intente enviar y explote igual, ver services/mailer.py.
+    SMTP_HOST = os.getenv("SMTP_HOST")
+    SMTP_PORT = os.getenv("SMTP_PORT")
+    SMTP_USER = os.getenv("SMTP_USER")
+    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+    MAIL_REMITENTE = os.getenv("MAIL_REMITENTE")
+    MAIL_REMITENTE_NOMBRE = os.getenv("MAIL_REMITENTE_NOMBRE")
+
 
 def validar_config():
     faltantes = [k for k in ("SECRET_KEY", "INTERNAL_API_KEY") if not getattr(Config, k)]

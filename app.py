@@ -63,6 +63,14 @@ def create_app():
         except Exception:
             return {"anuncio_franja_texto": ""}
 
+    @app.context_processor
+    def _inject_whatsapp():
+        from models import get_contacto_whatsapp
+        try:
+            return {"contacto_whatsapp": get_contacto_whatsapp()}
+        except Exception:
+            return {"contacto_whatsapp": ""}
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(catalogo_bp)
     app.register_blueprint(carrito_bp)

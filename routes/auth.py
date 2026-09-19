@@ -6,7 +6,8 @@ import logging
 from datetime import datetime, timedelta
 
 from flask import (
-    Blueprint, render_template, request, redirect, url_for, flash, session, g
+    Blueprint, render_template, request, redirect, url_for, flash, session, g,
+    current_app,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -17,7 +18,7 @@ from models import (
     reset_rate_limit_permitido, reset_registrar_intento,
 )
 from services.comenda_api_client import avisar_cuenta_nueva
-from services.mailer import enviar_email_reset
+from services.mailer import enviar_email_reset, mail_configurado
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +181,16 @@ def logout():
 def recuperar():
     if g.get("cliente_id"):
         return redirect(url_for("catalogo.index"))
+
+    # Arreglo posterior a D1: sin esto, pedir un reset sin proveedor de mail
+    # configurado terminaba en un 500 — inaceptable para una función que se
+    # ofrece en pantalla. Se corta ACÁ, antes de tocar rate limit o generar
+    # ningún token (la maquinaria de reset queda intacta, se activa sola
+    # apenas mail_configurado() empiece a dar True). El modo se detecta por
+    # configuración (mail_configurado / debug / el flag de log), nunca por
+    # una constante hardcodeada.
+    if not (mail_configurado() or current_app.debug or Config.RESET_LOG_LINK_FALLBACK):
+        return render_template("recuperar.html", sin_servicio=True)
 
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()

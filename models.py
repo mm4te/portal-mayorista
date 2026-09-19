@@ -174,6 +174,11 @@ def init_db():
             "Precios + IVA · Mínimo de compra $XXX.XXX · Envíos a todo el "
             "país · Entrega en 3 a 5 días hábiles"
         ),
+        # Mismo valor real que se usa en el footer (E2/E3) y en el mensaje
+        # de "recuperación no disponible" de /recuperar (D1, arreglo de
+        # falla ruidosa) — un solo lugar para no tener que cargarlo dos
+        # veces ni que se desincronicen.
+        "contacto_whatsapp": "11 3208-6865",
     }
     for k, v in _SEEDS.items():
         c.execute("INSERT OR IGNORE INTO configuracion (clave, valor) VALUES (?, ?)", (k, v))
@@ -221,6 +226,19 @@ def get_anuncio_franja():
         _anuncio_cache["valor"] = get_config("anuncio_franja_texto", "")
         _anuncio_cache["leido_en"] = ahora
     return _anuncio_cache["valor"]
+
+
+# Mismo motivo y mismo TTL que _anuncio_cache — el footer (todas las
+# páginas) y /recuperar leen contacto_whatsapp.
+_whatsapp_cache = {"valor": None, "leido_en": 0.0}
+
+
+def get_contacto_whatsapp():
+    ahora = time.monotonic()
+    if ahora - _whatsapp_cache["leido_en"] > _ANUNCIO_CACHE_TTL:
+        _whatsapp_cache["valor"] = get_config("contacto_whatsapp", "")
+        _whatsapp_cache["leido_en"] = ahora
+    return _whatsapp_cache["valor"]
 
 
 def set_config(clave, valor):

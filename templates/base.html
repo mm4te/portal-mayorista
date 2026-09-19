@@ -58,7 +58,11 @@
     <div class="footer-inner">
       <div>
         <strong>WhatsApp</strong>
-        <span class="footer-todo">TODO: cargar número de WhatsApp</span>
+        {% if contacto_whatsapp %}
+          <span>{{ contacto_whatsapp }}</span>
+        {% else %}
+          <span class="footer-todo">TODO: cargar número de WhatsApp</span>
+        {% endif %}
       </div>
       <div>
         <strong>Email</strong>
