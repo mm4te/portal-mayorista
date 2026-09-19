@@ -50,7 +50,12 @@ a:hover { text-decoration: underline; }
    (models.get_anuncio_franja cachea la lectura en memoria). Si está vacía,
    base.html directamente no renderiza el bloque. */
 .franja-anuncios {
-  height: 36px;
+  /* 36px es la altura en desktop, no un techo: el contenido manda (ver
+     media query de 560px, donde pasa a 2 líneas y crece lo que haga falta).
+     El sentido entero de esta franja es contestar IVA/mínimo/envíos/plazo
+     — truncarla en mobile (donde mira buena parte de los compradores)
+     rompe justo lo que la franja existe para resolver. */
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -60,22 +65,28 @@ a:hover { text-decoration: underline; }
 }
 /* El texto va en un <span>, no como texto directo del flex container: un
    item de flex (incluido el anónimo que crea un nodo de texto suelto) tiene
-   min-width:auto por default y no se achica por debajo de su ancho natural
-   — sin min-width:0 acá el texto se corta seco contra el overflow:hidden
-   del padre y el "…" de text-overflow nunca llega a mostrarse (mismo caso
-   que .pago-datos dd > span, ver más abajo). */
+   min-width:auto por default y no se achica por debajo de su ancho natural.
+   min-width:0 + overflow-wrap quedan como red de seguridad para un texto
+   larguísimo cargado a mano (mismo caso que .pago-datos dd > span) — el
+   modo normal es mostrar todo, no truncar. */
 .franja-anuncios span {
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
   font-size: 0.82rem;
   font-weight: 600;
   text-align: center;
 }
 @media (max-width: 560px) {
-  .franja-anuncios span { font-size: 0.72rem; }
-  .franja-anuncios { padding: 0 12px; }
+  .franja-anuncios {
+    min-height: 0;
+    height: auto;
+    padding: 6px 12px;
+  }
+  .franja-anuncios span {
+    font-size: 0.72rem;
+    white-space: normal;
+    line-height: 1.35;
+  }
 }
 
 /* ── Topbar ──────────────────────────────────────────────────────────────── */
