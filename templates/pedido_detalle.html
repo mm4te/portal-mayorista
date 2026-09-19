@@ -11,35 +11,37 @@
   </div>
   <p class="subtitle">Enviado el {{ pedido.fecha_creacion }}</p>
 
-  <table class="carrito-tabla">
-    <thead>
-      <tr><th>Producto</th><th>Precio unit.</th><th>Cantidad</th><th>Subtotal</th></tr>
-    </thead>
-    <tbody>
-      {% for i in items %}
-      <tr>
-        <td>
-          <strong>{{ i.nombre_producto }}</strong><br>
-          <span class="sku">{{ i.sku }}</span>
-          {% if i.disponible_confirmado == 0 %}
-            <span class="badge badge-sinstock">sin stock</span>
-          {% elif i.disponible_confirmado == 1 %}
-            <span class="badge badge-disponible">confirmado</span>
-          {% endif %}
-        </td>
-        <td>$ {{ i.precio_unitario_mayorista | pesos }}</td>
-        <td>{{ i.cantidad }}</td>
-        <td>$ {{ (i.precio_unitario_mayorista * i.cantidad) | pesos }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="3" class="total-label">Total</td>
-        <td class="total-value">$ {{ pedido.subtotal | pesos }}</td>
-      </tr>
-    </tfoot>
-  </table>
+  <div class="tabla-scroll">
+    <table class="carrito-tabla">
+      <thead>
+        <tr><th>Producto</th><th>Precio unit.</th><th>Cantidad</th><th>Subtotal</th></tr>
+      </thead>
+      <tbody>
+        {% for i in items %}
+        <tr>
+          <td>
+            <strong>{{ i.nombre_producto }}</strong><br>
+            <span class="sku">{{ i.sku }}</span>
+            {% if i.disponible_confirmado == 0 %}
+              <span class="badge badge-sinstock">sin stock</span>
+            {% elif i.disponible_confirmado == 1 %}
+              <span class="badge badge-disponible">confirmado</span>
+            {% endif %}
+          </td>
+          <td>$ {{ i.precio_unitario_mayorista | pesos }}</td>
+          <td>{{ i.cantidad }}</td>
+          <td>$ {{ (i.precio_unitario_mayorista * i.cantidad) | pesos }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" class="total-label">Total</td>
+          <td class="total-value">$ {{ pedido.subtotal | pesos }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 
   {% if pedido.estado in ('enviado', 'confirmando_stock') %}
     <div class="note">Estamos revisando el stock de tu pedido. Te avisamos apenas esté confirmado.</div>
@@ -80,8 +82,22 @@
         <h2>🏦 Datos para transferencia</h2>
         <dl class="pago-datos">
           {% if datos_pago.transferencia.banco %}<dt>Banco</dt><dd>{{ datos_pago.transferencia.banco }}</dd>{% endif %}
-          {% if datos_pago.transferencia.cbu %}<dt>CBU</dt><dd>{{ datos_pago.transferencia.cbu }}</dd>{% endif %}
-          {% if datos_pago.transferencia.alias %}<dt>Alias</dt><dd>{{ datos_pago.transferencia.alias }}</dd>{% endif %}
+          {% if datos_pago.transferencia.cbu %}
+            <dt>CBU</dt>
+            <dd>
+              <span>{{ datos_pago.transferencia.cbu }}</span>
+              <button type="button" class="btn-copy" data-copy="{{ datos_pago.transferencia.cbu }}"
+                      onclick="copiarValor(this)" aria-label="Copiar CBU"><i class="bi bi-clipboard"></i></button>
+            </dd>
+          {% endif %}
+          {% if datos_pago.transferencia.alias %}
+            <dt>Alias</dt>
+            <dd>
+              <span>{{ datos_pago.transferencia.alias }}</span>
+              <button type="button" class="btn-copy" data-copy="{{ datos_pago.transferencia.alias }}"
+                      onclick="copiarValor(this)" aria-label="Copiar alias"><i class="bi bi-clipboard"></i></button>
+            </dd>
+          {% endif %}
           {% if datos_pago.transferencia.titular %}<dt>Titular</dt><dd>{{ datos_pago.transferencia.titular }}</dd>{% endif %}
           {% if datos_pago.transferencia.cuit %}<dt>CUIT</dt><dd>{{ datos_pago.transferencia.cuit }}</dd>{% endif %}
         </dl>
@@ -100,4 +116,46 @@
     {% endif %}
   {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Copiar CBU/alias al portapapeles — evita transcribir a mano un CBU de
+  // 22 dígitos para una transferencia de varios cientos de miles de pesos.
+  function copiarValor(btn) {
+    var valor = btn.dataset.copy;
+    var icon = btn.querySelector('i');
+    var claseOriginal = icon.className;
+
+    function marcarCopiado() {
+      icon.className = 'bi bi-check-lg';
+      btn.classList.add('copiado');
+      setTimeout(function () {
+        icon.className = claseOriginal;
+        btn.classList.remove('copiado');
+      }, 1200);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(valor).then(marcarCopiado).catch(function () {
+        alert('No se pudo copiar. Copiá manualmente: ' + valor);
+      });
+    } else {
+      // Fallback para contextos sin Clipboard API (http, navegadores viejos).
+      var tmp = document.createElement('textarea');
+      tmp.value = valor;
+      tmp.style.position = 'fixed';
+      tmp.style.opacity = '0';
+      document.body.appendChild(tmp);
+      tmp.select();
+      try {
+        document.execCommand('copy');
+        marcarCopiado();
+      } catch (e) {
+        alert('No se pudo copiar. Copiá manualmente: ' + valor);
+      }
+      document.body.removeChild(tmp);
+    }
+  }
+</script>
 {% endblock %}

@@ -18,11 +18,18 @@
   --text-muted: #6b7280;
   --border-soft: #e5e7eb;
   --border-input: #d1d5db;
+  /* Ancho de página compartido — topbar, .page y el catálogo leen de acá
+     para no desalinearse entre sí (antes: 1100/1100/1200px sueltos, por
+     eso el logo arrancaba 50px adentro del borde de la grilla). */
+  --ancho: min(1440px, 100% - 48px);
+  /* La ficha de producto se queda angosta a propósito (ahí se lee texto
+     largo) pero sale de su propio token, no de un número suelto. */
+  --ancho-detalle: min(980px, 100% - 48px);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body { max-width: 100%; overflow-x: hidden; }
+html, body { max-width: 100%; }
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -41,9 +48,15 @@ a:hover { text-decoration: underline; }
   background: #fff;
   border-bottom: 1px solid var(--border-soft);
   box-shadow: var(--shadow-soft);
+  /* Fija arriba de todo — el catálogo mide ~5.900px y el carrito vive acá.
+     Es la ÚNICA franja sticky: la de anuncios (Grupo B) scrollea y se va,
+     si las dos quedaran fijas se comerían ~90px de pantalla en celular. */
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 .topbar-inner {
-  max-width: 1100px;
+  max-width: var(--ancho);
   margin: 0 auto;
   padding: 14px 20px;
   display: flex;
@@ -63,7 +76,7 @@ a:hover { text-decoration: underline; }
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .page {
-  max-width: 1100px;
+  max-width: var(--ancho);
   margin: 0 auto;
   padding: 28px 20px 60px;
 }
@@ -197,7 +210,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* ── Catálogo: layout sidebar + grilla ───────────────────────────────────── */
-.catalogo-page { max-width: 1200px; }
+.catalogo-page { max-width: var(--ancho); }
 .catalogo-layout { display: flex; gap: 24px; align-items: flex-start; }
 
 .cat-sidebar { width: 200px; flex-shrink: 0; position: sticky; top: 20px; }
@@ -261,16 +274,18 @@ input:focus, textarea:focus, select:focus {
 
 .grilla-catalogo {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 16px;
 }
 .producto-card-mayorista {
   position: relative;
   width: 100%;
-  /* Altura fija (no min-height): todas las cards miden exactamente igual,
-     tengan 1 o varias variantes, sin depender de que el grid las estire
-     por fila (una card sola en su fila no se achica). */
-  height: 339px;
+  /* height:100% (no un px fijo): la card ocupa toda la altura de su celda
+     del grid. Dentro de UNA fila esto ya alcanza (align-items:stretch es
+     el default) — grid-auto-rows:1fr de arriba es lo que además empareja
+     la altura ENTRE filas distintas, incluida una fila con una sola card. */
+  height: 100%;
   padding: 10px;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
@@ -285,11 +300,10 @@ input:focus, textarea:focus, select:focus {
 .producto-card-mayorista.clickable { cursor: pointer; }
 .producto-card-mayorista.clickable:hover { border-color: var(--primary); box-shadow: var(--shadow-hover); }
 
-/* Franja "media" de la card (entre el precio y el botón de abajo): mismo
-   min-height en las dos variantes de contenido (selector de cantidad vs.
-   miniaturas) para que TODAS las cards midan igual, sin depender de que el
-   grid las empareje por fila. */
-.card-medio { min-height: 76px; }
+/* .card-medio ya no necesita min-height propio: con .grilla-catalogo en
+   grid-auto-rows:1fr + height:100% en la card, el grid empareja la altura
+   de todas las cards (incluida una sola en su fila) sin ayuda extra —
+   verificado con Playwright con nombres de 1 y 2 líneas mezclados. */
 
 /* Miniaturas de variante (color/atributo) debajo del nombre */
 .mini-variantes {
@@ -330,7 +344,7 @@ input:focus, textarea:focus, select:focus {
 .imagen-principal,
 .producto-card-mayorista .img-vacia {
   width: 100%;
-  height: 140px;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 8px;
   background: #f3f4f6;
@@ -351,12 +365,11 @@ input:focus, textarea:focus, select:focus {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  /* Sin height fija: ya no hace falta reservar 2 líneas siempre para que
+     las cards midan igual — eso ahora lo resuelve grid-auto-rows:1fr en
+     .grilla-catalogo (empareja la card completa, no cada bloque interno).
+     overflow:hidden es lo que necesita -webkit-line-clamp para truncar. */
   overflow: hidden;
-  /* height fija (no min-height): un nombre de 1 sola línea no debe achicar
-     la card — todas miden igual sin importar cuánto texto tenga cada una.
-     2 líneas × line-height 1.2 = 2.4em exactos (con menos, la 2da línea
-     queda cortada por el overflow:hidden en vez de mostrarse completa). */
-  height: 2.4em;
 }
 .producto-card-mayorista .precio {
   font-size: 0.9rem;
@@ -395,12 +408,17 @@ input:focus, textarea:focus, select:focus {
   margin: 8px 0;
 }
 .selector-cantidad button {
-  width: 26px;
-  height: 26px;
+  /* Mínimo táctil (44×44). En la grilla de catálogo la card tiene ~165px
+     de ancho útil a 375px con 2 columnas — 44+44+36(input)+2×gap entra justo;
+     verificado con Playwright. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
   background: #fff;
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -411,7 +429,8 @@ input:focus, textarea:focus, select:focus {
 }
 .selector-cantidad button:hover { background: #f3f4f6; }
 .input-cantidad {
-  width: 42px;
+  width: 36px;
+  height: 44px;
   text-align: center;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -508,7 +527,9 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   border-radius: var(--radius-md);
 }
 .pago-box h2 { margin-bottom: 12px; color: #3730a3; }
-.pago-box p { margin-bottom: 8px; }
+/* overflow-wrap: red de seguridad — el mail de contacto (configuracion.
+   contacto_comprobante) es un valor cargado a mano, sin garantía de largo. */
+.pago-box p { margin-bottom: 8px; overflow-wrap: break-word; }
 .pago-opciones { display: flex; gap: 12px; flex-wrap: wrap; }
 .pago-opciones .btn { flex: 1; min-width: 160px; background: #fff; }
 .pago-dato {
@@ -518,12 +539,46 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .pago-datos { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 10px 0 14px; }
 .pago-datos dt { font-weight: 700; color: var(--text-muted); }
-.pago-datos dd { font-weight: 600; color: var(--heading); }
+.pago-datos dd {
+  font-weight: 600;
+  color: var(--heading);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  /* Red de seguridad para la razón social (texto con espacios, largo) —
+     el CBU no depende de esto: se soluciona con el ancho de columna
+     correcto (minmax(0,1fr) en la media query de 560px), no rompiéndolo
+     a la mitad. */
+  overflow-wrap: break-word;
+}
+/* Banco/Titular/CUIT van directo como texto en el dd; CBU/Alias además
+   traen un <span> (para poder sumarle el botón de copiar al lado) — un
+   flex item, por default, no se achica debajo de su max-content, así que
+   sin min-width:0 el texto largo empuja la fila igual aunque el dd padre
+   ya esté con overflow-wrap. */
+.pago-datos dd > span { min-width: 0; overflow-wrap: break-word; }
 .cambiar-pago-link { margin-top: 14px; font-size: 0.85rem; }
 .cambiar-pago-link a { color: var(--text-muted); text-decoration: underline; }
 
+/* Copiar CBU/alias: es una transferencia de varios cientos de miles de
+   pesos tipeada a mano, no querés que el cliente la transcriba a ojo. */
+.btn-copy {
+  padding: 3px 7px;
+  border: 1px solid var(--border-input);
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.btn-copy:hover { border-color: var(--primary); color: var(--primary); }
+.btn-copy.copiado { border-color: var(--success); color: var(--success); }
+
 /* ── Detalle de producto agrupado ────────────────────────────────────────── */
-.producto-detalle-page { max-width: 980px; }
+.producto-detalle-page { max-width: var(--ancho-detalle); }
 .volver-link {
   display: inline-block;
   margin-bottom: 18px;
@@ -603,7 +658,9 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 /* ── Responsive: catálogo con sidebar → chips horizontales ───────────────── */
-@media (max-width: 780px) {
+/* 900px (antes 780px): entre 780 y 1000px la sidebar de 200px dejaba la
+   grilla apretada — ahora pasa a chips horizontales un poco antes. */
+@media (max-width: 900px) {
   .catalogo-layout { flex-direction: column; gap: 14px; }
   .cat-sidebar {
     width: 100%;
@@ -635,7 +692,7 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 }
 
-@media (max-width: 780px) {
+@media (max-width: 900px) {
   .grilla-catalogo { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .detalle-layout { grid-template-columns: 1fr; gap: 20px; }
   .detalle-imagen img, .detalle-imagen .img-vacia { aspect-ratio: 4 / 3; }
@@ -646,4 +703,23 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   .card { padding: 20px; }
   .page { padding-left: 14px; padding-right: 14px; }
   .grilla-catalogo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* CBU/alias largos: en 2 columnas (max-content 1fr) el valor competía por
+     ancho con la etiqueta y desbordaba. A 1 columna el CBU entra entero.
+     minmax(0, 1fr) —no "1fr" a secas—: un track 1fr tiene un mínimo
+     implícito de "auto" (= max-content de su contenido), así que sin el
+     0 explícito el track no se achica por debajo del texto más largo y
+     el grid se sale de su contenedor igual, aunque esté en 1 columna. */
+  .pago-datos { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
+  .pago-datos dt { margin-top: 8px; }
+  .pago-datos dt:first-child { margin-top: 0; }
+  /* A 16px, 22 dígitos no entran en 1 línea junto al botón de copiar (mide
+     ~180px de ancho real) y el CBU terminaba partido en dos — 0.85rem sí
+     entra entero, verificado con Playwright (antes: 2 líneas, 48px de alto;
+     después: 1 línea, 24px). */
+  .pago-datos dd { font-size: 0.85rem; }
 }
+
+/* Tabla de ítems del pedido (pedido_detalle.html): mismo contenedor con
+   scroll horizontal contenido que ya usa carrito.html, para que una tabla
+   ancha nunca empuje el ancho de la página entera. */
+.tabla-scroll { overflow-x: auto; }
