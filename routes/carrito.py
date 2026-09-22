@@ -29,10 +29,13 @@ def _payload():
 
 
 def _estado_carrito(extra=None):
+    minimo = cart.estado_minimo()
     resp = {
         "ok": True,
         "total_items": cart.carrito_count(),
         "total": cart.total_carrito(),
+        "minimo_ok": minimo["cumple"],
+        "minimo_mensaje": minimo["mensaje"],
     }
     if extra:
         resp.update(extra)
@@ -46,6 +49,7 @@ def ver():
         "carrito.html",
         items=cart.get_carrito(),
         total=cart.total_carrito(),
+        minimo=cart.estado_minimo(),
     )
 
 
@@ -103,6 +107,13 @@ def enviar():
     if not items:
         flash("Tu carrito está vacío.", "error")
         return redirect(url_for("catalogo.index"))
+
+    # F4: se repite acá lo que ya se muestra en el carrito — no alcanza con
+    # saltear el JS del botón deshabilitado.
+    minimo = cart.estado_minimo()
+    if not minimo["cumple"]:
+        flash(minimo["mensaje"], "error")
+        return redirect(url_for("carrito.ver"))
 
     try:
         pedido_id, numero, subtotal = crear_pedido_enviado(g.cliente_id, items)

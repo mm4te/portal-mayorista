@@ -47,6 +47,13 @@ def create_app():
         except (ValueError, TypeError):
             return str(valor)
 
+    @app.template_filter("wa_link")
+    def formato_wa_link(telefono):
+        # wa.me exige solo dígitos, con 54 9 adelante (celular AR) — sin el
+        # 0/15 que la gente usa al escribir el número a mano.
+        digitos = "".join(ch for ch in str(telefono) if ch.isdigit())
+        return f"https://wa.me/549{digitos}"
+
     @app.context_processor
     def _inject_carrito():
         from services.carrito import carrito_count
@@ -70,6 +77,16 @@ def create_app():
             return {"contacto_whatsapp": get_contacto_whatsapp()}
         except Exception:
             return {"contacto_whatsapp": ""}
+
+    @app.context_processor
+    def _inject_direccion():
+        # F2: mismo dato que ya se usa para el pago en efectivo — una sola
+        # fuente para no tener la dirección cargada dos veces.
+        from models import get_config
+        try:
+            return {"contacto_direccion": get_config("pago_efectivo_direccion", "")}
+        except Exception:
+            return {"contacto_direccion": ""}
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(catalogo_bp)

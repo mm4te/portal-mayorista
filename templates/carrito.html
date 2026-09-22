@@ -53,11 +53,19 @@
     </tfoot>
   </table>
 
+  <div class="minimo-status {{ 'minimo-ok' if minimo.cumple else 'minimo-falta' }}" id="minimo-status">
+    <i class="bi {{ 'bi-check-circle' if minimo.cumple else 'bi-exclamation-circle' }}"></i>
+    <span id="minimo-mensaje">{{ minimo.mensaje }}</span>
+  </div>
+
   <form method="POST" action="{{ url_for('carrito.enviar') }}" class="enviar-form"
         onsubmit="return confirm('¿Enviar el pedido para revisión de stock?');">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <a href="{{ url_for('catalogo.index') }}" class="btn btn-ghost">Seguir comprando</a>
-    <button type="submit" class="btn">Enviar pedido</button>
+    <div class="enviar-accion">
+      <button type="submit" class="btn" id="btn-enviar-pedido" {{ 'disabled' if not minimo.cumple else '' }}>Enviar pedido</button>
+      <span class="motivo-minimo" id="motivo-minimo" {% if minimo.cumple %}style="display:none;"{% endif %}>{{ minimo.mensaje }}</span>
+    </div>
   </form>
 </div>
 {% endif %}
@@ -82,6 +90,25 @@
     if (!badge) return;
     if (cantidad > 0) { badge.textContent = cantidad; badge.style.display = 'flex'; }
     else { badge.style.display = 'none'; }
+  }
+
+  function actualizarEstadoMinimo(data) {
+    var status = document.getElementById('minimo-status');
+    var btn = document.getElementById('btn-enviar-pedido');
+    if (!status || !btn) return;
+    var msgStatus = document.getElementById('minimo-mensaje');
+    var icon = status.querySelector('i');
+    var motivo = document.getElementById('motivo-minimo');
+
+    status.classList.toggle('minimo-ok', !!data.minimo_ok);
+    status.classList.toggle('minimo-falta', !data.minimo_ok);
+    if (icon) icon.className = 'bi ' + (data.minimo_ok ? 'bi-check-circle' : 'bi-exclamation-circle');
+    if (msgStatus) msgStatus.textContent = data.minimo_mensaje;
+    btn.disabled = !data.minimo_ok;
+    if (motivo) {
+      motivo.textContent = data.minimo_mensaje;
+      motivo.style.display = data.minimo_ok ? 'none' : '';
+    }
   }
 
   function mostrarErrorInline(el, mensaje) {
@@ -127,6 +154,7 @@
         fila.querySelector('.col-subtotal').textContent = fmtPesos(res.data.item_subtotal);
         document.getElementById('carrito-total').textContent = fmtPesos(res.data.total);
         actualizarBadgeCarrito(res.data.total_items);
+        actualizarEstadoMinimo(res.data);
       })
       .catch(function () { mostrarErrorInline(contenedor, 'No se pudo actualizar. Revisá tu conexión.'); });
   }
@@ -143,6 +171,7 @@
         actualizarBadgeCarrito(res.data.total_items);
         if (res.data.total_items <= 0) { window.location.reload(); return; }
         document.getElementById('carrito-total').textContent = fmtPesos(res.data.total);
+        actualizarEstadoMinimo(res.data);
       })
       .catch(function () { mostrarErrorInline(btn, 'No se pudo quitar el ítem. Revisá tu conexión.'); });
   }

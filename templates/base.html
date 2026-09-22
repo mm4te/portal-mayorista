@@ -56,25 +56,30 @@
 
   <footer class="footer">
     <div class="footer-inner">
+      <div class="footer-marca">Comenda Mayorista</div>
       <div>
         <strong>WhatsApp</strong>
         {% if contacto_whatsapp %}
-          <span>{{ contacto_whatsapp }}</span>
+          <span><a href="{{ contacto_whatsapp | wa_link }}" target="_blank" rel="noopener">{{ contacto_whatsapp }}</a></span>
         {% else %}
           <span class="footer-todo">TODO: cargar número de WhatsApp</span>
         {% endif %}
       </div>
       <div>
         <strong>Email</strong>
-        <span class="footer-todo">TODO: cargar email de contacto</span>
+        <span><a href="mailto:comendadeco@gmail.com">comendadeco@gmail.com</a></span>
       </div>
       <div>
         <strong>Local</strong>
-        <span class="footer-todo">TODO: cargar dirección del local</span>
+        {% if contacto_direccion %}
+          <span>{{ contacto_direccion }}</span>
+        {% else %}
+          <span class="footer-todo">TODO: cargar dirección del local</span>
+        {% endif %}
       </div>
       <div>
         <strong>Horarios</strong>
-        <span class="footer-todo">TODO: cargar horarios de atención</span>
+        <span>Lunes a viernes de 10 a 17 hs</span>
       </div>
     </div>
   </footer>

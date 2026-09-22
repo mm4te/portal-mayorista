@@ -53,6 +53,8 @@
     <div class="note">Pedido pagado y facturado. ¡Gracias!</div>
 
   {% elif pedido.estado == 'confirmado_esperando_pago' %}
+    <div class="note">Te confirmamos el plazo de entrega cuando aprobemos el pedido, según el stock de cada producto.</div>
+
     {% if not pedido.metodo_pago_elegido or cambiar_pago %}
       <div class="pago-box">
         <h2>{{ 'Cambiá tu método de pago' if pedido.metodo_pago_elegido else 'Elegí tu método de pago' }}</h2>
@@ -104,7 +106,6 @@
         {% if not datos_pago.transferencia.cbu and not datos_pago.transferencia.alias %}
           <p class="hint">Los datos bancarios todavía no están cargados. Escribinos para coordinar.</p>
         {% endif %}
-        <p class="hint">SHUGA S.R.L. es la razón social de Comenda Deco.</p>
         <p>
           Una vez hecha la transferencia, enviá el comprobante
           {% if datos_pago.contacto_comprobante %}a <strong>{{ datos_pago.contacto_comprobante }}</strong>{% else %}a nuestro contacto habitual{% endif %},

@@ -604,6 +604,25 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .carrito-card { overflow-x: auto; }
 
+/* ── Mínimo de compra (F4) ────────────────────────────────────────────────
+   Siempre visible (cumplido o no) arriba del botón de enviar, y el mismo
+   texto se repite al lado del botón cuando está deshabilitado — así nadie
+   llega al final del carrito y se entera recién ahí. */
+.minimo-status {
+  margin-top: 20px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.minimo-status.minimo-ok { background: #d4edda; color: #155724; }
+.minimo-status.minimo-falta { background: #fff3cd; color: #856404; }
+.enviar-accion { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.motivo-minimo { font-size: 0.8rem; color: var(--danger); }
+
 .pedido-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 /* ── Selección / instrucciones de pago ───────────────────────────────────── */
@@ -853,3 +872,10 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   margin-bottom: 4px;
 }
 .footer-todo { font-size: 0.85rem; color: var(--danger); font-style: italic; }
+.footer-marca {
+  grid-column: 1 / -1;
+  font-weight: 700;
+  color: var(--heading);
+}
+.footer-inner a { color: inherit; }
+.footer-inner a:hover { color: var(--primary); }

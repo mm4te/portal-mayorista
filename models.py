@@ -160,25 +160,32 @@ def init_db():
     # ── Seeds de configuración (FASE 6: datos de pago) ──────────────────────
     _SEEDS = {
         "pago_efectivo_direccion": "Paso 559, CABA",
-        "pago_transferencia_banco": "",
-        "pago_transferencia_cbu": "",
-        "pago_transferencia_alias": "",
-        "pago_transferencia_titular": "",
-        "pago_transferencia_cuit": "",
+        # F1: razón social vigente en el banco hoy (con "COMANDA", no
+        # "COMENDA") — está en trámite el cambio, por eso vive acá y no en
+        # el template: el día que salga, se actualiza esta fila y listo.
+        "pago_transferencia_banco": "Santander",
+        "pago_transferencia_cbu": "0720195620000003753868",
+        "pago_transferencia_alias": "comendadeco.sa",
+        "pago_transferencia_titular": "COMANDA DECO S.R.L.",
+        "pago_transferencia_cuit": "30-71958971-1",
         "contacto_comprobante": "",
         # B1: a diferencia de los datos de pago (vacíos hasta cargarlos a
         # mano), esta arranca con texto real — si queda vacía la franja no
         # se renderiza (ver get_anuncio_franja/base.html), así que un
         # placeholder visible es mejor default que una franja en blanco.
         "anuncio_franja_texto": (
-            "Precios + IVA · Mínimo de compra $XXX.XXX · Envíos a todo el "
-            "país · Entrega en 3 a 5 días hábiles"
+            "Precios con IVA incluido · Mínimo de compra: $400.000 y 6 "
+            "unidades · Envíos a todo el país, flete a cargo del comprador"
         ),
         # Mismo valor real que se usa en el footer (E2/E3) y en el mensaje
         # de "recuperación no disponible" de /recuperar (D1, arreglo de
         # falla ruidosa) — un solo lugar para no tener que cargarlo dos
         # veces ni que se desincronicen.
         "contacto_whatsapp": "11 3208-6865",
+        # F4: mínimo de compra — las dos condiciones se validan en
+        # services/carrito.estado_minimo(), nunca hardcodeadas.
+        "minimo_compra_monto": "400000",
+        "minimo_compra_unidades": "6",
     }
     for k, v in _SEEDS.items():
         c.execute("INSERT OR IGNORE INTO configuracion (clave, valor) VALUES (?, ?)", (k, v))
@@ -239,6 +246,21 @@ def get_contacto_whatsapp():
         _whatsapp_cache["valor"] = get_config("contacto_whatsapp", "")
         _whatsapp_cache["leido_en"] = ahora
     return _whatsapp_cache["valor"]
+
+
+def get_minimo_compra():
+    """F4: los dos umbrales del mínimo de compra, siempre desde configuracion."""
+    monto = get_config("minimo_compra_monto", "400000")
+    unidades = get_config("minimo_compra_unidades", "6")
+    try:
+        monto = float(monto)
+    except (TypeError, ValueError):
+        monto = 0.0
+    try:
+        unidades = int(float(unidades))
+    except (TypeError, ValueError):
+        unidades = 0
+    return monto, unidades
 
 
 def set_config(clave, valor):
