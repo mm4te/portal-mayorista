@@ -135,8 +135,8 @@ def create_app():
             # por esta sección bajo ninguna circunstancia.
             destacados = []
 
-        hero_foto = os.path.join(app.static_folder, "landing", "hero.jpg")
-        hero_foto_existe = os.path.isfile(hero_foto)
+        hero_foto_existe = os.path.isfile(os.path.join(app.static_folder, "landing", "hero.jpg"))
+        local_foto_existe = os.path.isfile(os.path.join(app.static_folder, "landing", "local.jpg"))
 
         # contacto_whatsapp/email/direccion/horarios ya llegan por los
         # context_processors de más abajo — no hace falta repetirlos acá.
@@ -148,8 +148,11 @@ def create_app():
             destacados=destacados,
             hero_foto_existe=hero_foto_existe,
             hero_foto_url=url_for("static", filename="landing/hero.jpg", _external=True) if hero_foto_existe else "",
+            local_foto_existe=local_foto_existe,
             landing_url=url_for("home", _external=True),
             redes_instagram=get_config("redes_instagram", ""),
+            quienes_somos_texto=get_config("quienes_somos_texto", ""),
+            debug_mode=Config.DEBUG,
             whatsapp_bubble_link=wa_url(
                 whatsapp, "Hola, quiero consultar por la venta mayorista"
             ) if whatsapp else "",

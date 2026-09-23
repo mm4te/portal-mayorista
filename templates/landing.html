@@ -30,7 +30,7 @@
 
   <section class="hero {{ 'hero--real' if hero_foto_existe else 'hero--placeholder' }}"
             {% if hero_foto_existe %}style="background-image: url('{{ hero_foto_url }}');"{% endif %}>
-    {% if not hero_foto_existe %}
+    {% if not hero_foto_existe and debug_mode %}
       <span class="hero-foto-pendiente">FOTO PENDIENTE — static/landing/hero.jpg</span>
     {% endif %}
     <div class="hero-overlay"></div>
@@ -136,22 +136,21 @@
   </section>
   {% endif %}
 
+  {% if quienes_somos_texto %}
   <section class="land-section-alt">
     <div class="land-wrap">
       <h2 class="land-titulo-section">Quiénes somos</h2>
-      <div class="land-quienes">
-        <div>
-          <p class="land-placeholder-pendiente">
-            Texto pendiente de cargar: 2 a 3 párrafos contando quiénes son,
-            hace cuánto están en el rubro y qué distingue a Comenda de otras
-            deco — historia, valores, lo que quieran que un mayorista lea
-            antes de crear su cuenta.
-          </p>
-        </div>
-        <div class="land-foto-pendiente">FOTO PENDIENTE<br>(el local)</div>
+      <div class="land-quienes {{ '' if local_foto_existe or debug_mode else 'land-quienes--sin-foto' }}">
+        <div class="land-quienes-texto">{{ quienes_somos_texto }}</div>
+        {% if local_foto_existe %}
+          <img src="{{ url_for('static', filename='landing/local.jpg') }}" alt="Nuestro local" class="land-foto-local">
+        {% elif debug_mode %}
+          <div class="land-foto-pendiente">FOTO PENDIENTE<br>(el local)</div>
+        {% endif %}
       </div>
     </div>
   </section>
+  {% endif %}
 
   <section>
     <div class="land-wrap">

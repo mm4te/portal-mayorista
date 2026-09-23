@@ -5,3 +5,5 @@ Disallow: /carrito
 Disallow: /pedidos
 Disallow: /cuenta
 Disallow: /producto
+
+Sitemap: https://www.comendadecomayoristas.com.ar/sitemap.xml

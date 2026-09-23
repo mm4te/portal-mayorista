@@ -196,6 +196,10 @@ def init_db():
         # se oculta entera mientras tanto, no rompe nada.
         "landing_skus_destacados": "",
         "redes_instagram": "",
+        # Landing: sección "Quiénes somos" — vacía hasta cargarla, y mientras
+        # tanto la sección entera no se renderiza (nada de texto de relleno
+        # visible para un comprador real).
+        "quienes_somos_texto": "",
     }
     for k, v in _SEEDS.items():
         c.execute("INSERT OR IGNORE INTO configuracion (clave, valor) VALUES (?, ?)", (k, v))

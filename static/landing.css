@@ -129,6 +129,7 @@
   background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.75));
 }
 .hero--placeholder .hero-overlay { background: none; }
+/* Solo visible en debug (FLASK_DEBUG=true) — nunca en producción. */
 .hero-foto-pendiente {
   position: absolute;
   top: 16px;
@@ -239,17 +240,15 @@
   align-items: center;
   margin-top: 30px;
 }
-.land-quienes p { color: var(--land-ink-soft); margin-bottom: 14px; }
-.land-quienes p:last-child { margin-bottom: 0; }
-.land-placeholder-pendiente {
-  border: 1px dashed var(--land-pendiente-border);
-  background: var(--land-pendiente-bg);
-  color: var(--land-pendiente-ink);
-  padding: 16px 18px;
-  border-radius: var(--land-radius-sm);
-  font-size: 0.9rem;
-  font-style: italic;
+.land-quienes--sin-foto { grid-template-columns: minmax(0, 1fr); }
+.land-quienes-texto { color: var(--land-ink-soft); white-space: pre-line; }
+.land-foto-local {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--land-radius);
 }
+/* Solo visible en debug (FLASK_DEBUG=true) — nunca en producción. */
 .land-foto-pendiente {
   aspect-ratio: 4 / 3;
   border: 1px dashed var(--land-pendiente-border);
