@@ -103,9 +103,12 @@ def create_app():
             return {
                 "contacto_email": get_config("contacto_email", ""),
                 "contacto_horarios": get_config("contacto_horarios", ""),
+                # Lo usa el footer compartido (_footer.html), que ahora va
+                # en todas las páginas y no solo en el landing.
+                "redes_instagram": get_config("redes_instagram", ""),
             }
         except Exception:
-            return {"contacto_email": "", "contacto_horarios": ""}
+            return {"contacto_email": "", "contacto_horarios": "", "redes_instagram": ""}
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(catalogo_bp)
@@ -138,8 +141,9 @@ def create_app():
         hero_foto_existe = os.path.isfile(os.path.join(app.static_folder, "landing", "hero.jpg"))
         local_foto_existe = os.path.isfile(os.path.join(app.static_folder, "landing", "local.jpg"))
 
-        # contacto_whatsapp/email/direccion/horarios ya llegan por los
-        # context_processors de más abajo — no hace falta repetirlos acá.
+        # contacto_whatsapp/email/direccion/horarios y redes_instagram ya
+        # llegan por los context_processors de más abajo — no hace falta
+        # repetirlos acá.
         whatsapp = get_config("contacto_whatsapp", "")
         return render_template(
             "landing.html",
@@ -150,7 +154,6 @@ def create_app():
             hero_foto_url=url_for("static", filename="landing/hero.jpg", _external=True) if hero_foto_existe else "",
             local_foto_existe=local_foto_existe,
             landing_url=url_for("home", _external=True),
-            redes_instagram=get_config("redes_instagram", ""),
             quienes_somos_texto=get_config("quienes_somos_texto", ""),
             debug_mode=Config.DEBUG,
             whatsapp_bubble_link=wa_url(

@@ -32,6 +32,9 @@
      de la tienda. Ver .catalogo-page más abajo para la única excepción
      (la grilla del catálogo, que sí necesita más aire que el resto). */
   --ancho: min(1440px, 100% - 48px);
+  /* Lo lee el footer compartido (static/footer.css) — en el portal, el
+     mismo ancho que la topbar. landing.css lo define a 1300px. */
+  --ancho-contenido: var(--ancho);
   /* La ficha de producto se queda angosta a propósito (ahí se lee texto
      largo) pero sale de su propio token, no de un número suelto. */
   --ancho-detalle: min(980px, 100% - 48px);
@@ -887,34 +890,3 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
    scroll horizontal contenido que ya usa carrito.html, para que una tabla
    ancha nunca empuje el ancho de la página entera. */
 .tabla-scroll { overflow-x: auto; }
-
-/* ── Pie de página (Grupo B / B2) ─────────────────────────────────────────── */
-.footer {
-  margin-top: 40px;
-  border-top: 1px solid var(--border-soft);
-  background: var(--marca-fondo);
-}
-.footer-inner {
-  max-width: var(--ancho);
-  margin: 0 auto;
-  padding: 28px 20px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-}
-.footer-inner strong {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--heading);
-  margin-bottom: 4px;
-}
-.footer-todo { font-size: 0.85rem; color: var(--danger); font-style: italic; }
-.footer-marca {
-  grid-column: 1 / -1;
-  /* Texto de marca, no elemento funcional — mismo peso liviano que los
-     títulos (ver .brand). */
-  font-weight: var(--marca-titulo-peso);
-  color: var(--heading);
-}
-.footer-inner a { color: inherit; }
-.footer-inner a:hover { color: var(--primary); }

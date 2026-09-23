@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='footer.css') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   {% block head %}{% endblock %}
@@ -58,43 +59,7 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="footer">
-    <div class="footer-inner">
-      <div class="footer-marca">Comenda Mayorista</div>
-      <div>
-        <strong>WhatsApp</strong>
-        {% if contacto_whatsapp %}
-          <span><a href="{{ contacto_whatsapp | wa_link }}" target="_blank" rel="noopener">{{ contacto_whatsapp }}</a></span>
-        {% else %}
-          <span class="footer-todo">TODO: cargar número de WhatsApp</span>
-        {% endif %}
-      </div>
-      <div>
-        <strong>Email</strong>
-        {% if contacto_email %}
-          <span><a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a></span>
-        {% else %}
-          <span class="footer-todo">TODO: cargar email de contacto</span>
-        {% endif %}
-      </div>
-      <div>
-        <strong>Local</strong>
-        {% if contacto_direccion %}
-          <span>{{ contacto_direccion }}</span>
-        {% else %}
-          <span class="footer-todo">TODO: cargar dirección del local</span>
-        {% endif %}
-      </div>
-      <div>
-        <strong>Horarios</strong>
-        {% if contacto_horarios %}
-          <span>{{ contacto_horarios }}</span>
-        {% else %}
-          <span class="footer-todo">TODO: cargar horarios de atención</span>
-        {% endif %}
-      </div>
-    </div>
-  </footer>
+  {% include "_footer.html" %}
   <script>
     // D2: toggle de ver/ocultar contraseña — global porque lo usan login y
     // registro (varios campos en registro). Requiere la estructura

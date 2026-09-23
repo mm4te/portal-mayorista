@@ -5,6 +5,11 @@
    color-mix a partir de los tokens), no colores sueltos. */
 
 .landing {
+  /* Ancho del contenido de esta página — lo lee el footer compartido
+     (static/footer.css) para alinearse con el hero/.land-wrap. Mismo
+     cálculo que .land-wrap, que ahora sale de acá. */
+  --ancho-contenido: min(var(--marca-ancho), 100% - 48px);
+
   /* Texto claro muteado sobre el hero oscuro — no hay un token de marca
      para "texto secundario sobre superficie oscura", así que se deriva. */
   --land-hero-ink-soft: color-mix(in srgb, var(--marca-boton-texto) 68%, var(--marca-texto));
@@ -41,7 +46,7 @@
   /* Ancho de lectura de la tienda (1300px) — el landing SÍ es una página
      de contenido, a diferencia del portal logueado (ver static/style.css,
      --ancho, para el porqué de esa diferencia). */
-  max-width: min(var(--marca-ancho), 100% - 48px);
+  max-width: var(--ancho-contenido);
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -291,47 +296,6 @@
   font-size: 0.95rem;
 }
 
-/* ── Footer ──────────────────────────────────────────────────────────────── */
-.land-footer {
-  background: var(--marca-texto);
-  color: var(--land-hero-ink-soft);
-  padding: 56px 0 40px;
-}
-.land-footer-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 32px;
-}
-.land-footer-logo {
-  font-size: 1.3rem;
-  font-weight: var(--marca-titulo-peso);
-  color: var(--marca-boton-texto);
-  margin-bottom: 10px;
-}
-.land-footer h4 {
-  color: var(--marca-boton-texto);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 14px;
-}
-.land-footer-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  font-size: 0.92rem;
-}
-.land-footer-item svg { flex-shrink: 0; width: 18px; height: 18px; }
-.land-footer-item a:hover { text-decoration: underline; }
-.land-footer-bottom {
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid color-mix(in srgb, var(--marca-boton-texto) 15%, transparent);
-  font-size: 0.8rem;
-}
-
 /* ── Bubble de WhatsApp ──────────────────────────────────────────────────── */
 .land-wa-bubble {
   position: fixed;
@@ -357,7 +321,6 @@
   .land-pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .land-grid-piezas { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .land-quienes { grid-template-columns: 1fr; }
-  .land-footer-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 560px) {
@@ -368,7 +331,6 @@
   .land-logo { font-size: 1.2rem; }
   .land-pasos { grid-template-columns: 1fr 1fr; }
   .land-grid-piezas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .land-footer-grid { grid-template-columns: 1fr; gap: 28px; }
   /* La bubble no puede tapar el último CTA de la página en mobile — se
      achica un toque y se despega más del borde. */
   .land-wa-bubble { width: 52px; height: 52px; right: 14px; bottom: 14px; }
