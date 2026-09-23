@@ -171,8 +171,11 @@ def login():
 @auth_bp.route("/logout")
 def logout():
     session.clear()
-    flash("Cerraste sesión.", "success")
-    return redirect(url_for("auth.login"))
+    # Sin flash: el landing (templates/landing.html) es standalone y no
+    # renderiza mensajes flash — este quedaría en la sesión y le aparecería
+    # descolgado al usuario en la primera pantalla del portal que visite
+    # después. Caer en la página pública ya avisa que cerró sesión.
+    return redirect(url_for("home"))
 
 
 # ── Recuperación de contraseña (D1) ─────────────────────────────────────────
