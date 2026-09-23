@@ -1,43 +1,35 @@
 /* static/landing.css — Landing pública de Comenda Mayorista
-   Paleta y tipografía propias, deliberadamente separadas de static/style.css
-   (el portal logueado): esto es el escaparate comercial, no una pantalla de
-   trabajo. Nada de --primary (#4361ee) acá. */
-
-:root {
-  --land-bg: #faf6f0;
-  --land-bg-alt: #f1e9dd;
-  --land-card: #ffffff;
-  --land-ink: #2b2621;
-  --land-ink-soft: #6e6459;
-  --land-border: #e4d9c8;
-  --land-hero-bg: #171310;
-  --land-hero-ink: #f7f1e8;
-  --land-hero-ink-soft: #cfc3b2;
-  --land-pendiente-bg: #fbeee0;
-  --land-pendiente-border: #d8b183;
-  --land-pendiente-ink: #7a4a1f;
-  --land-radius: 16px;
-  --land-radius-sm: 10px;
-  --land-ancho: min(1200px, 100% - 48px);
-  --land-shadow: 0 8px 24px rgba(43, 38, 33, 0.08);
-}
-
-.landing * { margin: 0; padding: 0; box-sizing: border-box; }
-.landing html, .landing body { max-width: 100%; }
+   Paleta y tipografía del brand kit real de la marca (static/tokens.css,
+   cargado antes que esta hoja) — ya no una paleta inventada aparte. Los
+   --land-* que quedan acá son derivados propios de esta página (blends con
+   color-mix a partir de los tokens), no colores sueltos. */
 
 .landing {
-  font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
-  color: var(--land-ink);
-  background: var(--land-bg);
+  /* Texto claro muteado sobre el hero oscuro — no hay un token de marca
+     para "texto secundario sobre superficie oscura", así que se deriva. */
+  --land-hero-ink-soft: color-mix(in srgb, var(--marca-boton-texto) 68%, var(--marca-texto));
+  --land-shadow: 0 8px 24px color-mix(in srgb, var(--marca-texto) 8%, transparent);
+  /* "FOTO PENDIENTE" — solo se ve en debug (ver landing.html), pero igual
+     sale de la marca (alerta) y no de un hex inventado. */
+  --land-pendiente-bg: color-mix(in srgb, var(--marca-alerta) 12%, white);
+  --land-pendiente-border: color-mix(in srgb, var(--marca-alerta) 45%, white);
+  --land-pendiente-ink: color-mix(in srgb, var(--marca-alerta) 55%, var(--marca-texto));
+
+  font-family: var(--marca-fuente);
+  color: var(--marca-texto);
+  background: var(--marca-fondo);
   line-height: 1.55;
   overflow-x: hidden;
 }
+.landing * { margin: 0; padding: 0; box-sizing: border-box; }
+.landing html, .landing body { max-width: 100%; }
 
+/* Títulos en el peso liviano de la marca — nada de Georgia ni de bold acá,
+   mismo criterio que el portal (ver static/style.css). */
 .landing h1, .landing h2, .landing h3 {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-weight: 700;
+  font-weight: var(--marca-titulo-peso);
   line-height: 1.2;
-  color: var(--land-ink);
+  color: var(--marca-texto);
 }
 
 .landing a { text-decoration: none; }
@@ -46,7 +38,10 @@
 .landing section { padding: 64px 0; }
 
 .land-wrap {
-  max-width: var(--land-ancho);
+  /* Ancho de lectura de la tienda (1300px) — el landing SÍ es una página
+     de contenido, a diferencia del portal logueado (ver static/style.css,
+     --ancho, para el porqué de esa diferencia). */
+  max-width: min(var(--marca-ancho), 100% - 48px);
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -56,12 +51,12 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(250, 246, 240, 0.92);
+  background: color-mix(in srgb, var(--marca-fondo) 92%, transparent);
   backdrop-filter: blur(6px);
-  border-bottom: 1px solid var(--land-border);
+  border-bottom: 1px solid var(--marca-borde);
 }
 .land-header-inner {
-  max-width: var(--land-ancho);
+  max-width: min(var(--marca-ancho), 100% - 48px);
   margin: 0 auto;
   padding: 16px 20px;
   display: flex;
@@ -70,9 +65,8 @@
   gap: 16px;
 }
 .land-logo {
-  font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.4rem;
-  font-weight: 700;
+  font-weight: var(--marca-titulo-peso);
   letter-spacing: 0.02em;
 }
 .land-header-nav { display: flex; align-items: center; gap: 20px; }
@@ -85,42 +79,43 @@
   gap: 8px;
   padding: 12px 22px;
   border-radius: 999px;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.95rem;
   white-space: nowrap;
-  border: 2px solid var(--land-ink);
-  background: var(--land-ink);
-  color: var(--land-hero-ink);
+  border: 2px solid var(--marca-texto);
+  background: var(--marca-texto);
+  color: var(--marca-boton-texto);
   cursor: pointer;
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 .land-btn:hover { opacity: 0.85; }
 .land-btn-ghost {
   background: transparent;
-  color: var(--land-ink);
+  color: var(--marca-texto);
 }
 .land-btn-ghost.on-dark {
-  border-color: var(--land-hero-ink);
-  color: var(--land-hero-ink);
+  border-color: var(--marca-boton-texto);
+  color: var(--marca-boton-texto);
 }
 .land-btn.on-dark {
-  background: var(--land-hero-ink);
-  border-color: var(--land-hero-ink);
-  color: var(--land-hero-bg);
+  background: var(--marca-boton-texto);
+  border-color: var(--marca-boton-texto);
+  color: var(--marca-texto);
 }
 
 /* ── Hero ────────────────────────────────────────────────────────────────── */
 .hero {
   position: relative;
-  background: var(--land-hero-bg);
-  color: var(--land-hero-ink);
+  /* El negro del hero es el marrón oscuro de la marca, no un color suelto. */
+  background: var(--marca-texto);
+  color: var(--marca-boton-texto);
   padding: 96px 0 110px;
   overflow: hidden;
 }
 .hero--placeholder {
   background:
-    linear-gradient(160deg, rgba(23, 19, 16, 0.55), rgba(23, 19, 16, 0.9)),
-    repeating-linear-gradient(135deg, #221c17 0 24px, #1b1613 24px 48px);
+    linear-gradient(160deg, color-mix(in srgb, var(--marca-texto) 55%, transparent), color-mix(in srgb, var(--marca-texto) 90%, black)),
+    repeating-linear-gradient(135deg, var(--marca-texto) 0 24px, color-mix(in srgb, var(--marca-texto) 85%, black) 24px 48px);
 }
 .hero--real { background-size: cover; background-position: center; }
 .hero-overlay {
@@ -134,10 +129,10 @@
   position: absolute;
   top: 16px;
   right: 16px;
-  background: rgba(247, 241, 232, 0.9);
-  color: var(--land-hero-bg);
+  background: color-mix(in srgb, var(--marca-boton-texto) 90%, transparent);
+  color: var(--marca-texto);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.06em;
   padding: 6px 12px;
   border-radius: 999px;
@@ -146,13 +141,13 @@
 .hero-content { position: relative; z-index: 1; max-width: 640px; }
 .hero-volanta {
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.14em;
   color: var(--land-hero-ink-soft);
   margin-bottom: 18px;
 }
 .hero .hero-titulo {
-  color: var(--land-hero-ink);
+  color: var(--marca-boton-texto);
   font-size: clamp(2.2rem, 4.5vw, 3.6rem);
   margin-bottom: 20px;
 }
@@ -173,25 +168,27 @@
   margin-top: 40px;
 }
 .land-tarjeta {
-  background: var(--land-card);
-  border: 1px solid var(--land-border);
-  border-radius: var(--land-radius);
+  background: var(--marca-fondo);
+  border: 1px solid var(--marca-borde);
+  border-radius: var(--marca-radio);
   padding: 28px 26px;
   box-shadow: var(--land-shadow);
 }
 .land-tarjeta h3 {
   font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--marca-label);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 12px;
 }
-.land-tarjeta p { color: var(--land-ink-soft); font-size: 0.95rem; }
-.land-section-alt { background: var(--land-bg-alt); }
+.land-tarjeta p { color: var(--marca-texto-suave); font-size: 0.95rem; }
+.land-section-alt { background: var(--marca-fondo-suave); }
 .land-titulo-section {
   font-size: clamp(1.5rem, 3vw, 2.1rem);
   margin-bottom: 8px;
 }
-.land-bajada-section { color: var(--land-ink-soft); max-width: 560px; }
+.land-bajada-section { color: var(--marca-texto-suave); max-width: 560px; }
 
 /* ── Cómo comprar ────────────────────────────────────────────────────────── */
 .land-pasos {
@@ -202,14 +199,13 @@
 }
 .land-paso { padding: 4px; }
 .land-paso-num {
-  font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--land-border);
+  font-weight: 600;
+  color: var(--marca-borde-fuerte);
   margin-bottom: 10px;
 }
-.land-paso h3 { font-size: 1rem; margin-bottom: 8px; }
-.land-paso p { color: var(--land-ink-soft); font-size: 0.9rem; }
+.land-paso h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+.land-paso p { color: var(--marca-texto-suave); font-size: 0.9rem; }
 
 /* ── Piezas destacadas ───────────────────────────────────────────────────── */
 .land-grid-piezas {
@@ -222,8 +218,8 @@
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: var(--land-radius-sm);
-  background: var(--land-bg-alt);
+  border-radius: var(--marca-radio-sm);
+  background: var(--marca-fondo-suave);
 }
 .land-pieza-nombre {
   margin-top: 10px;
@@ -241,12 +237,12 @@
   margin-top: 30px;
 }
 .land-quienes--sin-foto { grid-template-columns: minmax(0, 1fr); }
-.land-quienes-texto { color: var(--land-ink-soft); white-space: pre-line; }
+.land-quienes-texto { color: var(--marca-texto-suave); white-space: pre-line; }
 .land-foto-local {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: var(--land-radius);
+  border-radius: var(--marca-radio);
 }
 /* Solo visible en debug (FLASK_DEBUG=true) — nunca en producción. */
 .land-foto-pendiente {
@@ -254,7 +250,7 @@
   border: 1px dashed var(--land-pendiente-border);
   background: var(--land-pendiente-bg);
   color: var(--land-pendiente-ink);
-  border-radius: var(--land-radius);
+  border-radius: var(--marca-radio);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -267,12 +263,12 @@
 /* ── FAQ ─────────────────────────────────────────────────────────────────── */
 .land-faq { margin-top: 30px; max-width: 780px; }
 .land-faq details {
-  border-bottom: 1px solid var(--land-border);
+  border-bottom: 1px solid var(--marca-borde);
   padding: 18px 0;
 }
 .land-faq summary {
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 1.02rem;
   list-style: none;
   display: flex;
@@ -285,19 +281,19 @@
   content: '+';
   font-size: 1.3rem;
   font-weight: 400;
-  color: var(--land-ink-soft);
+  color: var(--marca-texto-suave);
   flex-shrink: 0;
 }
 .land-faq details[open] summary::after { content: '−'; }
 .land-faq p {
-  color: var(--land-ink-soft);
+  color: var(--marca-texto-suave);
   margin-top: 12px;
   font-size: 0.95rem;
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 .land-footer {
-  background: var(--land-hero-bg);
+  background: var(--marca-texto);
   color: var(--land-hero-ink-soft);
   padding: 56px 0 40px;
 }
@@ -307,15 +303,15 @@
   gap: 32px;
 }
 .land-footer-logo {
-  font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--land-hero-ink);
+  font-weight: var(--marca-titulo-peso);
+  color: var(--marca-boton-texto);
   margin-bottom: 10px;
 }
 .land-footer h4 {
-  color: var(--land-hero-ink);
+  color: var(--marca-boton-texto);
   font-size: 0.85rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 14px;
@@ -332,7 +328,7 @@
 .land-footer-bottom {
   margin-top: 40px;
   padding-top: 20px;
-  border-top: 1px solid rgba(247, 241, 232, 0.15);
+  border-top: 1px solid color-mix(in srgb, var(--marca-boton-texto) 15%, transparent);
   font-size: 0.8rem;
 }
 
@@ -345,7 +341,9 @@
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: #25D366;
+  /* Verde oficial de WhatsApp (--wa-verde en tokens.css) — no es un color
+     de la marca Comenda, es la identidad del propio WhatsApp. */
+  background: var(--wa-verde);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,26 +1,36 @@
 /* static/style.css — Portal Mayorista
-   Paleta y tipografía alineadas con comenda-sistema para consistencia de marca. */
+   Paleta y tipografía tomadas del brand kit real de Comenda Deco (ver
+   static/tokens.css, cargado antes que esta hoja) — no de una paleta propia. */
 
 :root {
-  --primary: #4361ee;
-  --primary-dark: #3a56d4;
-  --success: #2ecc71;
-  --danger: #e63946;
-  --light: #f8f9fa;
-  --dark: #212529;
-  --gray: #6c757d;
-  --border: #dee2e6;
-  --radius-sm: 8px;
-  --radius-md: 12px;
+  --primary: var(--marca-boton);
+  --primary-dark: var(--marca-boton-hover);
+  --success: var(--marca-exito);
+  --danger: var(--marca-peligro);
+  --light: var(--marca-fondo-suave);
+  --dark: var(--marca-texto);
+  --gray: var(--marca-texto-suave);
+  --border: var(--marca-borde-fuerte);
+  /* La marca no distingue dos niveles de radio para tarjetas/cajas — los
+     dos colapsan al mismo var(--marca-radio). Los botones tienen su propio
+     radio (var(--marca-radio-xs)) declarado en cada selector de botón. */
+  --radius-sm: var(--marca-radio);
+  --radius-md: var(--marca-radio);
   --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --heading: #111827;
-  --text-muted: #6b7280;
-  --border-soft: #e5e7eb;
-  --border-input: #d1d5db;
+  --heading: var(--marca-texto);
+  --text-muted: var(--marca-texto-suave);
+  --border-soft: var(--marca-borde);
+  --border-input: var(--marca-borde-fuerte);
   /* Ancho de página compartido — topbar, .page y el catálogo leen de acá
      para no desalinearse entre sí (antes: 1100/1100/1200px sueltos, por
-     eso el logo arrancaba 50px adentro del borde de la grilla). */
+     eso el logo arrancaba 50px adentro del borde de la grilla — Grupo A).
+     A PROPÓSITO se queda en 1440px y NO pasa a var(--marca-ancho) (1300px):
+     esos 1300 son un ancho de LECTURA de la tienda, y el portal logueado es
+     una herramienta de trabajo, no una página de contenido — que sus propios
+     elementos queden alineados entre sí importa más que empatar el número
+     de la tienda. Ver .catalogo-page más abajo para la única excepción
+     (la grilla del catálogo, que sí necesita más aire que el resto). */
   --ancho: min(1440px, 100% - 48px);
   /* La ficha de producto se queda angosta a propósito (ahí se lee texto
      largo) pero sale de su propio token, no de un número suelto. */
@@ -32,7 +42,7 @@
 html, body { max-width: 100%; }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--marca-fuente);
   color: var(--dark);
   background: var(--light);
   line-height: 1.5;
@@ -61,7 +71,7 @@ a:hover { text-decoration: underline; }
   justify-content: center;
   padding: 0 16px;
   background: var(--primary);
-  color: #fff;
+  color: var(--marca-boton-texto);
 }
 /* El texto va en un <span>, no como texto directo del flex container: un
    item de flex (incluido el anónimo que crea un nodo de texto suelto) tiene
@@ -91,7 +101,7 @@ a:hover { text-decoration: underline; }
 
 /* ── Topbar ──────────────────────────────────────────────────────────────── */
 .topbar {
-  background: #fff;
+  background: var(--marca-fondo);
   border-bottom: 1px solid var(--border-soft);
   box-shadow: var(--shadow-soft);
   /* Fija arriba de todo — el catálogo mide ~5.900px y el carrito vive acá.
@@ -112,7 +122,9 @@ a:hover { text-decoration: underline; }
 }
 .brand {
   font-size: 1.15rem;
-  font-weight: 700;
+  /* El logotipo es texto de marca, no un elemento funcional — mismo peso
+     liviano que los títulos, no el 600 de botones/etiquetas. */
+  font-weight: var(--marca-titulo-peso);
   color: var(--heading);
 }
 .brand span { color: var(--primary); }
@@ -132,15 +144,17 @@ a:hover { text-decoration: underline; }
 .narrow { max-width: 460px; }
 
 .card {
-  background: #fff;
+  background: var(--marca-fondo);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-soft);
   padding: 28px;
 }
 
-h1 { font-size: 1.5rem; color: var(--heading); margin-bottom: 6px; }
-h2 { font-size: 1.15rem; color: var(--heading); margin-bottom: 14px; }
+/* Los títulos van en el peso liviano de la marca (400) — es una decisión
+   explícita de marca, no un olvido: NO ponerlos en bold. */
+h1 { font-size: 1.5rem; color: var(--heading); margin-bottom: 6px; font-weight: var(--marca-titulo-peso); }
+h2 { font-size: 1.15rem; color: var(--heading); margin-bottom: 14px; font-weight: var(--marca-titulo-peso); }
 .subtitle { color: var(--text-muted); margin-bottom: 22px; }
 
 /* ── Formularios ─────────────────────────────────────────────────────────── */
@@ -158,7 +172,7 @@ textarea, select {
 }
 input:focus, textarea:focus, select:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
   outline: none;
 }
 .hint { font-size: 0.78rem; color: var(--text-muted); }
@@ -195,10 +209,12 @@ input:focus, textarea:focus, select:focus {
   display: inline-block;
   padding: 11px 18px;
   background: var(--primary);
-  color: #fff;
+  color: var(--marca-boton-texto);
   border: none;
-  border-radius: var(--radius-sm);
-  font-weight: 700;
+  /* Los botones tienen su propio radio, más chico que tarjetas/cajas —
+     así se ve en la tienda. */
+  border-radius: var(--marca-radio-xs);
+  font-weight: 600;
   font-size: 0.95rem;
   font-family: inherit;
   cursor: pointer;
@@ -211,9 +227,9 @@ input:focus, textarea:focus, select:focus {
   color: var(--primary);
   border: 1px solid var(--primary);
 }
-.btn-ghost:hover { background: rgba(67, 97, 238, 0.06); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
 .btn-danger { background: var(--danger); }
-.btn-danger:hover { background: #c92f3b; }
+.btn-danger:hover { background: color-mix(in srgb, var(--danger) 80%, black); }
 
 .form-foot {
   margin-top: 6px;
@@ -234,31 +250,37 @@ input:focus, textarea:focus, select:focus {
      "NewConnectionError(...)") que sin esto desborda la página entera. */
   overflow-wrap: break-word;
 }
-.flash-messages .success { background: #d4edda; color: #155724; }
-.flash-messages .error   { background: #f8d7da; color: #721c24; }
-.flash-messages .info    { background: #cce5ff; color: #004085; }
-.flash-messages .warning { background: #fff3cd; color: #856404; }
+/* Pares fondo-claro/texto-oscuro derivados con color-mix() a partir del
+   color sólido de marca — el kit no trae una "versión clara" de cada
+   estado. Contraste medido (no asumido): éxito 5.5:1, error 6.0:1, alerta
+   5.6:1, los tres sobre 4.5:1 para texto chico. */
+.flash-messages .success { background: color-mix(in srgb, var(--marca-exito) 14%, white); color: color-mix(in srgb, var(--marca-exito) 40%, var(--marca-texto)); }
+.flash-messages .error   { background: color-mix(in srgb, var(--marca-peligro) 14%, white); color: color-mix(in srgb, var(--marca-peligro) 40%, var(--marca-texto)); }
+/* "info" no tiene color propio en la marca (no hay azul) — tratamiento
+   neutro cálido con el acento, en vez de inventar un azul fuera de paleta. */
+.flash-messages .info    { background: color-mix(in srgb, var(--marca-acento) 10%, white); color: var(--marca-texto); }
+.flash-messages .warning { background: color-mix(in srgb, var(--marca-alerta) 14%, white); color: color-mix(in srgb, var(--marca-alerta) 40%, var(--marca-texto)); }
 
 /* ── Badges de estado ────────────────────────────────────────────────────── */
 .badge {
   display: inline-block;
   padding: 3px 9px;
-  border-radius: 6px;
+  border-radius: var(--marca-radio-md);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.badge-pendiente_aprobacion { background: #fff3cd; color: #856404; }
-.badge-aprobado  { background: #d4edda; color: #155724; }
-.badge-rechazado { background: #f8d7da; color: #721c24; }
-.badge-suspendido { background: #e9ecef; color: #495057; }
+.badge-pendiente_aprobacion { background: color-mix(in srgb, var(--marca-alerta) 14%, white); color: color-mix(in srgb, var(--marca-alerta) 40%, var(--marca-texto)); }
+.badge-aprobado  { background: color-mix(in srgb, var(--marca-exito) 14%, white); color: color-mix(in srgb, var(--marca-exito) 40%, var(--marca-texto)); }
+.badge-rechazado { background: color-mix(in srgb, var(--marca-peligro) 14%, white); color: color-mix(in srgb, var(--marca-peligro) 40%, var(--marca-texto)); }
+.badge-suspendido { background: var(--marca-borde); color: var(--marca-texto-suave); }
 
 /* ── Estados vacíos / notas ──────────────────────────────────────────────── */
 .note {
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  color: #3730a3;
+  background: color-mix(in srgb, var(--marca-acento) 8%, var(--marca-fondo));
+  border: 1px solid var(--border-soft);
+  color: var(--marca-texto);
   padding: 14px 16px;
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
@@ -268,7 +290,7 @@ input:focus, textarea:focus, select:focus {
 .carrito-icono-btn {
   position: relative;
   font-size: 1.35rem;
-  color: #111827;
+  color: var(--heading);
   display: inline-flex;
   align-items: center;
 }
@@ -277,8 +299,8 @@ input:focus, textarea:focus, select:focus {
   position: absolute;
   top: -6px;
   right: -9px;
-  background: #ef4444;
-  color: #fff;
+  background: var(--danger);
+  color: var(--marca-boton-texto);
   border-radius: 50%;
   font-size: 0.65rem;
   min-width: 16px;
@@ -287,10 +309,15 @@ input:focus, textarea:focus, select:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* ── Catálogo: layout sidebar + grilla ───────────────────────────────────── */
+/* Lee del mismo --ancho que topbar/.page/footer (1440px) — el catálogo es
+   una grilla de trabajo, no una página de lectura, y por eso el portal
+   entero se queda en el ancho del Grupo A en vez de pasar a
+   var(--marca-ancho) (1300px, el ancho de lectura de la tienda): que el
+   portal quede alineado consigo mismo importa más que empatar ese número. */
 .catalogo-page { max-width: var(--ancho); }
 .catalogo-layout { display: flex; gap: 24px; align-items: flex-start; }
 
@@ -311,11 +338,11 @@ input:focus, textarea:focus, select:focus {
   font-weight: 500;
   border-left: 3px solid transparent;
 }
-.cat-link:hover { background: #f3f4f6; text-decoration: none; }
+.cat-link:hover { background: var(--marca-fondo-suave); text-decoration: none; }
 .cat-link.activa {
-  background: #eef2ff;
+  background: color-mix(in srgb, var(--primary) 10%, var(--marca-fondo));
   color: var(--primary);
-  font-weight: 700;
+  font-weight: 600;
   border-left-color: var(--primary);
 }
 
@@ -343,14 +370,14 @@ input:focus, textarea:focus, select:focus {
 }
 .cat-buscador input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
   outline: none;
 }
 .cat-buscador .clear-q {
   position: absolute;
   right: 12px;
   color: var(--text-muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .grilla-catalogo {
@@ -368,9 +395,9 @@ input:focus, textarea:focus, select:focus {
      la altura ENTRE filas distintas, incluida una fila con una sola card. */
   height: 100%;
   padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
+  border-radius: var(--marca-radio);
+  border: 1px solid var(--border-soft);
+  background: var(--marca-fondo);
   display: flex;
   flex-direction: column;
 }
@@ -400,14 +427,14 @@ input:focus, textarea:focus, select:focus {
   height: 20px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid #e5e7eb;
-  background: #f3f4f6;
+  border: 1px solid var(--border-soft);
+  background: var(--marca-fondo-suave);
   flex-shrink: 0;
 }
 .mas-variantes {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-left: 2px;
 }
 /* "Ver opciones": mismo look que el botón de agregar pero no dispara su
@@ -427,15 +454,15 @@ input:focus, textarea:focus, select:focus {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 8px;
-  background: #f3f4f6;
+  border-radius: var(--marca-radio);
+  background: var(--marca-fondo-suave);
   display: block;
 }
 .producto-card-mayorista .img-vacia {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #cbd5e1;
+  color: var(--marca-borde-fuerte);
   font-size: 1.6rem;
 }
 .producto-card-mayorista .nombre {
@@ -461,8 +488,9 @@ input:focus, textarea:focus, select:focus {
 }
 .producto-card-mayorista .precio {
   font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--primary);
+  font-weight: 600;
+  /* Explícito, no var(--primary): un precio no necesita gritar. */
+  color: var(--marca-texto);
   margin-top: 4px;
 }
 /* "Desde $X": el producto tiene variantes con precios distintos (ej.
@@ -479,13 +507,13 @@ input:focus, textarea:focus, select:focus {
   display: inline-block;
   margin-top: 6px;
   padding: 2px 7px;
-  border-radius: 5px;
+  border-radius: var(--marca-radio-sm);
   font-size: 0.66rem;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
-.mini-badge.disp { background: #d4edda; color: #155724; }
+.mini-badge.disp { background: color-mix(in srgb, var(--marca-exito) 14%, white); color: color-mix(in srgb, var(--marca-exito) 40%, var(--marca-texto)); }
 
 /* Selector de cantidad (card del catálogo y filas del carrito) */
 .selector-cantidad {
@@ -503,9 +531,9 @@ input:focus, textarea:focus, select:focus {
   height: 44px;
   min-width: 44px;
   min-height: 44px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border-radius: var(--marca-radio-xs);
+  border: 1px solid var(--border-input);
+  background: var(--marca-fondo);
   font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
@@ -515,13 +543,13 @@ input:focus, textarea:focus, select:focus {
   font-family: inherit;
   color: var(--dark);
 }
-.selector-cantidad button:hover { background: #f3f4f6; }
+.selector-cantidad button:hover { background: var(--marca-fondo-suave); }
 .input-cantidad {
   width: 36px;
   height: 44px;
   text-align: center;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--marca-radio-xs);
   padding: 4px 2px;
   font-size: 0.85rem;
   font-family: inherit;
@@ -538,11 +566,11 @@ input:focus, textarea:focus, select:focus {
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--marca-radio-xs);
   background: var(--primary);
-  color: #fff;
+  color: var(--marca-boton-texto);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   display: inline-flex;
@@ -552,15 +580,17 @@ input:focus, textarea:focus, select:focus {
 }
 .btn-agregar-carrito:hover { background: var(--primary-dark); }
 .btn-agregar-carrito:disabled {
-  background: #e9ecef;
-  color: #9ca3af;
+  background: var(--marca-borde);
+  color: var(--marca-texto-suave);
   cursor: not-allowed;
 }
 .btn-agregar-carrito.agregado { background: var(--success); }
 
-.badge-disponible { background: #d4edda; color: #155724; }
-.badge-sinstock   { background: #e9ecef; color: #6c757d; }
-.badge-estado     { background: #cce5ff; color: #004085; text-transform: none; letter-spacing: 0; }
+.badge-disponible { background: color-mix(in srgb, var(--marca-exito) 14%, white); color: color-mix(in srgb, var(--marca-exito) 40%, var(--marca-texto)); }
+.badge-sinstock   { background: var(--marca-borde); color: var(--marca-texto-suave); }
+/* "info" de estado de pedido — mismo tratamiento neutro que .flash-messages
+   .info: la marca no tiene azul. */
+.badge-estado     { background: color-mix(in srgb, var(--marca-acento) 10%, white); color: var(--marca-texto); text-transform: none; letter-spacing: 0; }
 
 button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -577,7 +607,7 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .carrito-tabla .sku { font-size: 0.75rem; color: var(--text-muted); }
 .carrito-tabla tfoot td { border-bottom: none; padding-top: 14px; }
 .total-label { text-align: right; font-weight: 600; color: var(--text-muted); }
-.total-value { font-weight: 700; font-size: 1.05rem; color: var(--heading); }
+.total-value { font-weight: 600; font-size: 1.05rem; color: var(--heading); }
 
 .qty-form { display: flex; gap: 6px; align-items: center; }
 .qty-form input[type="number"] { width: 64px; padding: 7px; }
@@ -585,8 +615,8 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-mini {
   padding: 6px 10px;
   border: 1px solid var(--border-input);
-  background: #fff;
-  border-radius: 6px;
+  background: var(--marca-fondo);
+  border-radius: var(--marca-radio-xs);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -618,34 +648,40 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   align-items: center;
   gap: 8px;
 }
-.minimo-status.minimo-ok { background: #d4edda; color: #155724; }
-.minimo-status.minimo-falta { background: #fff3cd; color: #856404; }
+.minimo-status.minimo-ok { background: color-mix(in srgb, var(--marca-exito) 14%, white); color: color-mix(in srgb, var(--marca-exito) 40%, var(--marca-texto)); }
+.minimo-status.minimo-falta { background: color-mix(in srgb, var(--marca-alerta) 14%, white); color: color-mix(in srgb, var(--marca-alerta) 40%, var(--marca-texto)); }
 .enviar-accion { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .motivo-minimo { font-size: 0.8rem; color: var(--danger); }
 
 .pedido-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 /* ── Selección / instrucciones de pago ───────────────────────────────────── */
+/* Acá está el CBU: es la pantalla donde alguien está por transferir varios
+   cientos de miles de pesos. Tiene que seguir leyéndose como un bloque
+   propio y delimitado, no aplanarse contra el fondo blanco de la página —
+   por eso el borde es el acento SÓLIDO (no una mezcla tenue como el resto
+   de los bordes; medido: 7.1:1 contra el fondo de la caja, bien visible),
+   con el fondo apenas teñido. */
 .pago-box {
   margin-top: 20px;
   padding: 18px 20px;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
+  background: color-mix(in srgb, var(--marca-acento) 6%, var(--marca-fondo));
+  border: 1px solid var(--marca-acento);
   border-radius: var(--radius-md);
 }
-.pago-box h2 { margin-bottom: 12px; color: #3730a3; }
+.pago-box h2 { margin-bottom: 12px; color: var(--marca-acento); }
 /* overflow-wrap: red de seguridad — el mail de contacto (configuracion.
    contacto_comprobante) es un valor cargado a mano, sin garantía de largo. */
 .pago-box p { margin-bottom: 8px; overflow-wrap: break-word; }
 .pago-opciones { display: flex; gap: 12px; flex-wrap: wrap; }
-.pago-opciones .btn { flex: 1; min-width: 160px; background: #fff; }
+.pago-opciones .btn { flex: 1; min-width: 160px; background: var(--marca-fondo); }
 .pago-dato {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--heading);
 }
 .pago-datos { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 10px 0 14px; }
-.pago-datos dt { font-weight: 700; color: var(--text-muted); }
+.pago-datos dt { font-weight: 600; color: var(--text-muted); }
 .pago-datos dd {
   font-weight: 600;
   color: var(--heading);
@@ -673,8 +709,8 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-copy {
   padding: 3px 7px;
   border: 1px solid var(--border-input);
-  background: #fff;
-  border-radius: 6px;
+  background: var(--marca-fondo);
+  border-radius: var(--marca-radio-xs);
   cursor: pointer;
   font-size: 0.8rem;
   line-height: 1;
@@ -707,14 +743,14 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: var(--radius-md);
-  background: #f3f4f6;
+  background: var(--marca-fondo-suave);
   display: block;
 }
 .img-vacia.grande {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #cbd5e1;
+  color: var(--marca-borde-fuerte);
   font-size: 3rem;
 }
 
@@ -723,8 +759,9 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .detalle-sku { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; }
 .detalle-precio {
   font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--primary);
+  font-weight: 600;
+  /* Explícito, no var(--primary): mismo criterio que el precio de la card. */
+  color: var(--marca-texto);
   margin-bottom: 18px;
 }
 /* Ahora va al final (después del botón de agregar) — separación propia
@@ -759,7 +796,7 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .opcion-variante-label.activa {
   border-color: var(--primary);
   background: var(--primary);
-  color: #fff;
+  color: var(--marca-boton-texto);
 }
 /* C7: precio propio de cada variante, en su chip — antes había que ir
    clickeando una por una para ver cómo cambiaba el precio de arriba. */
@@ -768,13 +805,13 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   font-weight: 600;
   color: var(--text-muted);
 }
-.opcion-variante-label.activa .opcion-variante-precio { color: rgba(255, 255, 255, 0.85); }
+.opcion-variante-label.activa .opcion-variante-precio { color: color-mix(in srgb, var(--marca-boton-texto) 85%, transparent); }
 
 .detalle-cantidad { justify-content: flex-start; margin: 0 0 16px; }
 
 .producto-detalle-page .btn:disabled {
-  background: #e9ecef;
-  color: #9ca3af;
+  background: var(--marca-borde);
+  color: var(--marca-texto-suave);
   cursor: not-allowed;
 }
 
@@ -809,7 +846,7 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
     border-color: var(--primary);
     border-left: 1px solid var(--primary);
     background: var(--primary);
-    color: #fff;
+    color: var(--marca-boton-texto);
   }
 }
 
@@ -855,7 +892,7 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .footer {
   margin-top: 40px;
   border-top: 1px solid var(--border-soft);
-  background: #fff;
+  background: var(--marca-fondo);
 }
 .footer-inner {
   max-width: var(--ancho);
@@ -874,7 +911,9 @@ button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 .footer-todo { font-size: 0.85rem; color: var(--danger); font-style: italic; }
 .footer-marca {
   grid-column: 1 / -1;
-  font-weight: 700;
+  /* Texto de marca, no elemento funcional — mismo peso liviano que los
+     títulos (ver .brand). */
+  font-weight: var(--marca-titulo-peso);
   color: var(--heading);
 }
 .footer-inner a { color: inherit; }

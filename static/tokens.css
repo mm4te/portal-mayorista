@@ -1,0 +1,29 @@
+:root {
+  /* Marca Comenda Deco — tomado de las variables de comendadeco.com.ar */
+  --marca-fondo:        #FFFFFF;
+  --marca-fondo-suave:  #FAF8F6;   /* derivado: secciones alternas */
+  --marca-texto:        #3A332D;
+  --marca-texto-suave:  #6B635B;   /* derivado del 60% de opacidad */
+  --marca-acento:       #664D3A;
+  --marca-boton:        #614A3B;
+  --marca-boton-hover:  #4E3B2F;   /* derivado */
+  --marca-boton-texto:  #FFFFFF;
+  --marca-label:        #8C7A5F;
+  --marca-borde:        #EBE9E7;   /* derivado del 10% */
+  --marca-borde-fuerte: #D6D3D0;   /* derivado del 20% */
+  --marca-exito:        #4BB98C;
+  --marca-peligro:      #DD7774;
+  --marca-alerta:       #DC8F38;
+  --marca-radio:        8px;
+  --marca-radio-md:     6px;
+  --marca-radio-sm:     4px;
+  --marca-radio-xs:     2px;
+  --marca-fuente:       'Poppins', system-ui, -apple-system, sans-serif;
+  --marca-titulo-peso:  400;
+  --marca-ancho:        1300px;
+
+  /* Verde oficial de WhatsApp — color de marca de un tercero, no de Comenda.
+     Vive acá (con este nombre, no --marca-*) para que quede claro que es la
+     única excepción deliberada a la paleta de la marca. */
+  --wa-verde: #25D366;
+}
