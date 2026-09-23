@@ -2,8 +2,9 @@
 import os
 import time
 import logging
+from urllib.parse import quote
 
-from flask import Flask, g, redirect, url_for
+from flask import Flask, g, redirect, url_for, send_from_directory, render_template
 from flask_wtf.csrf import CSRFProtect
 
 # El negocio opera en Argentina (misma decisión que comenda-sistema).
@@ -28,6 +29,16 @@ logging.basicConfig(
 csrf = CSRFProtect()
 
 
+def wa_url(telefono, mensaje=None):
+    # wa.me exige solo dígitos, con 54 9 adelante (celular AR) — sin el
+    # 0/15 que la gente usa al escribir el número a mano.
+    digitos = "".join(ch for ch in str(telefono) if ch.isdigit())
+    url = f"https://wa.me/549{digitos}"
+    if mensaje:
+        url += f"?text={quote(mensaje)}"
+    return url
+
+
 def create_app():
     validar_config()
     init_db()
@@ -49,10 +60,7 @@ def create_app():
 
     @app.template_filter("wa_link")
     def formato_wa_link(telefono):
-        # wa.me exige solo dígitos, con 54 9 adelante (celular AR) — sin el
-        # 0/15 que la gente usa al escribir el número a mano.
-        digitos = "".join(ch for ch in str(telefono) if ch.isdigit())
-        return f"https://wa.me/549{digitos}"
+        return wa_url(telefono)
 
     @app.context_processor
     def _inject_carrito():
@@ -112,7 +120,48 @@ def create_app():
     def home():
         if g.get("cliente_id"):
             return redirect(url_for("catalogo.index"))
-        return redirect(url_for("auth.login"))
+
+        from models import get_config, get_minimo_compra
+        from services.comenda_api_client import get_destacados
+
+        monto_minimo, unidades_minimo = get_minimo_compra()
+
+        skus_csv = get_config("landing_skus_destacados", "")
+        skus = [s.strip() for s in skus_csv.split(",") if s.strip()]
+        try:
+            destacados = get_destacados(skus) if skus else []
+        except Exception:
+            # Red de seguridad final: la home es pública, no puede caerse
+            # por esta sección bajo ninguna circunstancia.
+            destacados = []
+
+        hero_foto = os.path.join(app.static_folder, "landing", "hero.jpg")
+        hero_foto_existe = os.path.isfile(hero_foto)
+
+        # contacto_whatsapp/email/direccion/horarios ya llegan por los
+        # context_processors de más abajo — no hace falta repetirlos acá.
+        whatsapp = get_config("contacto_whatsapp", "")
+        return render_template(
+            "landing.html",
+            monto_minimo=monto_minimo,
+            unidades_minimo=unidades_minimo,
+            destacados=destacados,
+            hero_foto_existe=hero_foto_existe,
+            hero_foto_url=url_for("static", filename="landing/hero.jpg", _external=True) if hero_foto_existe else "",
+            landing_url=url_for("home", _external=True),
+            redes_instagram=get_config("redes_instagram", ""),
+            whatsapp_bubble_link=wa_url(
+                whatsapp, "Hola, quiero consultar por la venta mayorista"
+            ) if whatsapp else "",
+        )
+
+    @app.route("/robots.txt")
+    def robots_txt():
+        return send_from_directory(app.static_folder, "robots.txt")
+
+    @app.route("/sitemap.xml")
+    def sitemap_xml():
+        return send_from_directory(app.static_folder, "sitemap.xml")
 
     return app
 

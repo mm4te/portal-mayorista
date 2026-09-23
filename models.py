@@ -190,6 +190,12 @@ def init_db():
         # services/carrito.estado_minimo(), nunca hardcodeadas.
         "minimo_compra_monto": "400000",
         "minimo_compra_unidades": "6",
+        # Landing: SKUs de la sección "Algunas de nuestras piezas", elegidos
+        # a mano (no automático — hay productos sin foto o con imagen rota
+        # que no tienen que aparecer acá). Vacía hasta cargarla: la sección
+        # se oculta entera mientras tanto, no rompe nada.
+        "landing_skus_destacados": "",
+        "redes_instagram": "",
     }
     for k, v in _SEEDS.items():
         c.execute("INSERT OR IGNORE INTO configuracion (clave, valor) VALUES (?, ?)", (k, v))

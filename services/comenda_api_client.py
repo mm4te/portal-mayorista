@@ -7,6 +7,7 @@ El portal NUNCA toca negocio.db directo — este módulo es el único punto de
 contacto con el stock y las ventas del sistema principal.
 """
 import logging
+import time
 
 import requests
 
@@ -55,12 +56,12 @@ def _request(method, path, *, json=None, params=None, timeout=None):
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
-def get_catalogo(solo_disponibles=False):
+def get_catalogo(solo_disponibles=False, timeout=None):
     """Catálogo agrupado por variantes: una entrada por product_id (o por sku
     para los productos sin variantes), cada una con su lista de 'variantes'.
     solo_disponibles=True pide que el sistema principal ya excluya los sin stock."""
     params = {"solo_disponibles": "true"} if solo_disponibles else None
-    return _request("GET", "catalogo-mayorista", params=params) or []
+    return _request("GET", "catalogo-mayorista", params=params, timeout=timeout) or []
 
 
 def get_producto(product_id, solo_disponibles=False):
@@ -142,3 +143,49 @@ def avisar_pedido_nuevo(pedido):
     except ComendaAPIError as e:
         logger.warning("avisar_pedido_nuevo falló (no crítico): %s", e)
         return False
+
+
+# Landing: la sección de destacados la pega cualquier visitante anónimo (y
+# cualquier bot) en la puerta de entrada al negocio, así que NUNCA puede
+# tirar abajo la página por una API lenta o caída — cache largo (5 min, estos
+# productos no cambian tan seguido) + timeout corto + si falla, se sirve el
+# último resultado bueno que haya en memoria (o lista vacía si todavía no
+# hubo ninguno) en vez de propagar el error.
+_DESTACADOS_TTL = 300
+_DESTACADOS_TIMEOUT = 4
+_destacados_cache = {"skus": None, "valor": [], "leido_en": 0.0}
+
+
+def get_destacados(skus):
+    """Dada una lista de SKUs (configuracion.landing_skus_destacados), busca
+    el producto (grupo) que contiene cada uno y devuelve [{'nombre',
+    'imagen_url'}] en el mismo orden, salteando en silencio los SKUs que no
+    existen o cuyo producto no tiene imagen."""
+    skus = tuple(s for s in skus if s)
+    if not skus:
+        return []
+
+    ahora = time.monotonic()
+    cache = _destacados_cache
+    if cache["skus"] == skus and ahora - cache["leido_en"] <= _DESTACADOS_TTL:
+        return cache["valor"]
+
+    try:
+        catalogo = get_catalogo(timeout=_DESTACADOS_TIMEOUT)
+    except ComendaAPIError as e:
+        logger.warning("get_destacados: usando último resultado en caché (%s)", e)
+        return cache["valor"]
+
+    por_sku = {}
+    for grupo in catalogo:
+        imagen = grupo.get("imagen_url")
+        if not imagen:
+            continue
+        nombre = grupo.get("nombre_base") or ""
+        for v in grupo.get("variantes", []):
+            if v.get("sku"):
+                por_sku.setdefault(v["sku"], {"nombre": nombre, "imagen_url": imagen})
+
+    resultado = [por_sku[sku] for sku in skus if sku in por_sku]
+    _destacados_cache.update({"skus": skus, "valor": resultado, "leido_en": ahora})
+    return resultado

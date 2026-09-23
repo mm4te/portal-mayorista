@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /catalogo
+Disallow: /carrito
+Disallow: /pedidos
+Disallow: /cuenta
+Disallow: /producto

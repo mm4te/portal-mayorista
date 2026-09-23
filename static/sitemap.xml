@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TODO: reemplazar REEMPLAZAR-CON-EL-DOMINIO-REAL por el dominio real de producción antes de enviar esto a Google Search Console. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://REEMPLAZAR-CON-EL-DOMINIO-REAL/</loc>
+  </url>
+  <url>
+    <loc>https://REEMPLAZAR-CON-EL-DOMINIO-REAL/registro</loc>
+  </url>
+</urlset>

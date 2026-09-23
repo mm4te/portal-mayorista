@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comenda Mayorista · Deco minimalista por mayor</title>
+  <meta name="description" content="Espejos, textiles, canastos y piezas en fibra natural para tu local, a precio mayorista con IVA incluido. Envíos a todo el país.">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Comenda Mayorista · Deco minimalista por mayor">
+  <meta property="og:description" content="Espejos, textiles, canastos y piezas en fibra natural para tu local, a precio mayorista con IVA incluido.">
+  <meta property="og:url" content="{{ landing_url }}">
+  {% if hero_foto_existe %}
+  <meta property="og:image" content="{{ hero_foto_url }}">
+  {% endif %}
+</head>
+<body class="landing">
+
+  <header class="land-header">
+    <div class="land-header-inner">
+      <a href="{{ url_for('home') }}" class="land-logo">Comenda</a>
+      <nav class="land-header-nav">
+        <a href="{{ url_for('auth.login') }}" class="land-link-ingresar">Ingresar</a>
+        <a href="{{ url_for('auth.registro') }}" class="land-btn">Crear cuenta</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero {{ 'hero--real' if hero_foto_existe else 'hero--placeholder' }}"
+            {% if hero_foto_existe %}style="background-image: url('{{ hero_foto_url }}');"{% endif %}>
+    {% if not hero_foto_existe %}
+      <span class="hero-foto-pendiente">FOTO PENDIENTE — static/landing/hero.jpg</span>
+    {% endif %}
+    <div class="hero-overlay"></div>
+    <div class="land-wrap hero-content">
+      <p class="hero-volanta">ENVÍOS A TODO EL PAÍS</p>
+      <h1 class="hero-titulo">Deco minimalista, por mayor.</h1>
+      <p class="hero-bajada">
+        Espejos, textiles, canastos y piezas en fibra natural para tu local.
+        Precios mayoristas con IVA incluido.
+      </p>
+      <div class="hero-acciones">
+        <a href="{{ url_for('auth.registro') }}" class="land-btn on-dark">CREAR CUENTA MAYORISTA →</a>
+        <a href="{{ url_for('auth.login') }}" class="hero-link-secundario">Ya tengo cuenta</a>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="land-wrap">
+      <h2 class="land-titulo-section">Condiciones de compra</h2>
+      <div class="land-tarjetas">
+        <div class="land-tarjeta">
+          <h3>Precios mayoristas</h3>
+          <p>Los precios del catálogo son con IVA incluido y están pensados para
+             que revendas con margen. Lo que ves es lo que pagás, sin sorpresas
+             al facturar.</p>
+        </div>
+        <div class="land-tarjeta">
+          <h3>Mínimo de compra</h3>
+          <p>El pedido mínimo es de ${{ '{:,.0f}'.format(monto_minimo).replace(',', '.') }}
+             y {{ unidades_minimo }} unidades, y se tienen que cumplir las dos
+             condiciones. El carrito te muestra en todo momento cuánto te falta
+             para llegar.</p>
+        </div>
+        <div class="land-tarjeta">
+          <h3>Envío o retiro</h3>
+          <p>Despachamos a todo el país por el transporte que elijas, con el
+             flete a tu cargo. También podés retirar tu pedido por nuestro
+             local una vez confirmado el pago.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="land-section-alt">
+    <div class="land-wrap">
+      <h2 class="land-titulo-section">Cómo comprar</h2>
+      <div class="land-pasos">
+        <div class="land-paso">
+          <div class="land-paso-num">01</div>
+          <h3>Creá tu cuenta</h3>
+          <p>Completá los datos de tu empresa. Te pedimos el CUIT porque lo
+             vamos a necesitar para facturarte.</p>
+        </div>
+        <div class="land-paso">
+          <div class="land-paso-num">02</div>
+          <h3>Esperá la aprobación</h3>
+          <p>Revisamos cada solicitud a mano. Te contestamos por mail dentro
+             de las 24 a 48 horas hábiles.</p>
+        </div>
+        <div class="land-paso">
+          <div class="land-paso-num">03</div>
+          <h3>Armá tu pedido</h3>
+          <p>Con la cuenta activa vas a ver el catálogo completo con precios
+             mayoristas. Sumá productos al carrito hasta alcanzar el mínimo.</p>
+        </div>
+        <div class="land-paso">
+          <div class="land-paso-num">04</div>
+          <h3>Confirmá y pagá</h3>
+          <p>Elegí transferencia bancaria o efectivo. Al confirmar el pedido
+             te mostramos los datos, y nos mandás el comprobante por
+             WhatsApp.</p>
+        </div>
+        <div class="land-paso">
+          <div class="land-paso-num">05</div>
+          <h3>Coordinamos la entrega</h3>
+          <p>Cuando acreditamos el pago preparamos tu pedido y te confirmamos
+             el plazo según el stock de cada producto. Despachamos o
+             coordinamos el retiro.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% if destacados %}
+  <section>
+    <div class="land-wrap">
+      <h2 class="land-titulo-section">Algunas de nuestras piezas</h2>
+      <p class="land-bajada-section">Los precios mayoristas los ves al ingresar con tu cuenta.</p>
+      <div class="land-grid-piezas">
+        {% for pieza in destacados %}
+        <figure>
+          <img src="{{ pieza.imagen_url }}" alt="{{ pieza.nombre }}" class="land-pieza-imagen"
+               loading="lazy" onerror="this.closest('figure').style.display='none'">
+          <figcaption class="land-pieza-nombre">{{ pieza.nombre }}</figcaption>
+        </figure>
+        {% endfor %}
+      </div>
+      <div class="land-cta-final">
+        <a href="{{ url_for('auth.registro') }}" class="land-btn">Ver el catálogo completo →</a>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="land-section-alt">
+    <div class="land-wrap">
+      <h2 class="land-titulo-section">Quiénes somos</h2>
+      <div class="land-quienes">
+        <div>
+          <p class="land-placeholder-pendiente">
+            Texto pendiente de cargar: 2 a 3 párrafos contando quiénes son,
+            hace cuánto están en el rubro y qué distingue a Comenda de otras
+            deco — historia, valores, lo que quieran que un mayorista lea
+            antes de crear su cuenta.
+          </p>
+        </div>
+        <div class="land-foto-pendiente">FOTO PENDIENTE<br>(el local)</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="land-wrap">
+      <h2 class="land-titulo-section">Preguntas frecuentes</h2>
+      <div class="land-faq">
+        <details>
+          <summary>¿Necesito CUIT para comprar?</summary>
+          <p>Sí. Facturamos todas las ventas, así que necesitamos tu CUIT
+             para emitir la factura a nombre de tu empresa.</p>
+        </details>
+        <details>
+          <summary>¿Cuánto tardan en aprobar mi cuenta?</summary>
+          <p>Revisamos cada solicitud a mano y te respondemos por mail
+             dentro de las 24 a 48 horas hábiles.</p>
+        </details>
+        <details>
+          <summary>¿Cuál es el mínimo de compra?</summary>
+          <p>${{ '{:,.0f}'.format(monto_minimo).replace(',', '.') }} y
+             {{ unidades_minimo }} unidades. Las dos condiciones tienen que
+             cumplirse en el mismo pedido.</p>
+        </details>
+        <details>
+          <summary>¿Los precios incluyen IVA?</summary>
+          <p>Sí, todos los precios del catálogo son con IVA incluido.</p>
+        </details>
+        <details>
+          <summary>¿Hacen envíos al interior?</summary>
+          <p>Sí, a todo el país. Despachamos por el transporte que elijas y
+             el flete corre por tu cuenta.</p>
+        </details>
+        <details>
+          <summary>¿Cuánto tarda en llegar mi pedido?</summary>
+          <p>Depende del stock de cada producto. Te confirmamos el plazo
+             cuando aprobamos el pedido.</p>
+        </details>
+        <details>
+          <summary>¿Cómo puedo pagar?</summary>
+          <p>Por transferencia bancaria o en efectivo. Los datos te
+             aparecen al confirmar el pedido.</p>
+        </details>
+        <details>
+          <summary>¿Puedo retirar en lugar de que me lo envíen?</summary>
+          <p>
+            Sí, por nuestro local{% if contacto_direccion %} en {{ contacto_direccion }}{% endif %}{% if contacto_horarios %}, {{ contacto_horarios | lower }}{% endif %},
+            una vez confirmado el pago.
+          </p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <footer class="land-footer">
+    <div class="land-wrap">
+      <div class="land-footer-grid">
+        <div>
+          <div class="land-footer-logo">Comenda</div>
+          <p>Deco minimalista por mayor.</p>
+        </div>
+        <div>
+          <h4>Contacto</h4>
+          {% if contacto_email %}
+          <div class="land-footer-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18v12H3z"/><path d="M3 7l9 6 9-6"/></svg>
+            <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a>
+          </div>
+          {% endif %}
+          {% if contacto_whatsapp %}
+          <div class="land-footer-item">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8.9-.1.2-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.2.2-.4.1-.2 0-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9 0 1.1.8 2.2.9 2.4.1.2 1.6 2.5 4 3.5.6.2 1 .4 1.3.5.6.2 1.1.2 1.5.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.4-.3z"/></svg>
+            <a href="{{ contacto_whatsapp | wa_link }}" target="_blank" rel="noopener">{{ contacto_whatsapp }}</a>
+          </div>
+          {% endif %}
+          {% if contacto_horarios %}
+          <div class="land-footer-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            <span>{{ contacto_horarios }}</span>
+          </div>
+          {% endif %}
+        </div>
+        <div>
+          <h4>Redes</h4>
+          {% if redes_instagram %}
+          <div class="land-footer-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+            <a href="https://instagram.com/{{ redes_instagram }}" target="_blank" rel="noopener">@{{ redes_instagram }}</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="land-footer-bottom">© Comenda Mayorista</div>
+    </div>
+  </footer>
+
+  {% if whatsapp_bubble_link %}
+  <a href="{{ whatsapp_bubble_link }}" target="_blank" rel="noopener" class="land-wa-bubble" aria-label="Escribinos por WhatsApp">
+    <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8.9-.1.2-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.3.4-.4.1-.1.2-.2.2-.4.1-.2 0-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9 0 1.1.8 2.2.9 2.4.1.2 1.6 2.5 4 3.5.6.2 1 .4 1.3.5.6.2 1.1.2 1.5.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.4-.3z"/></svg>
+  </a>
+  {% endif %}
+
+</body>
+</html>
