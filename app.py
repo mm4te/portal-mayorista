@@ -88,6 +88,17 @@ def create_app():
         except Exception:
             return {"contacto_direccion": ""}
 
+    @app.context_processor
+    def _inject_contacto_footer():
+        from models import get_config
+        try:
+            return {
+                "contacto_email": get_config("contacto_email", ""),
+                "contacto_horarios": get_config("contacto_horarios", ""),
+            }
+        except Exception:
+            return {"contacto_email": "", "contacto_horarios": ""}
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(catalogo_bp)
     app.register_blueprint(carrito_bp)

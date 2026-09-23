@@ -182,6 +182,10 @@ def init_db():
         # falla ruidosa) — un solo lugar para no tener que cargarlo dos
         # veces ni que se desincronicen.
         "contacto_whatsapp": "11 3208-6865",
+        # F2: mail y horarios del footer — mismo criterio que WhatsApp y
+        # dirección, una fila editable en vez de texto fijo en el template.
+        "contacto_email": "comendadeco@gmail.com",
+        "contacto_horarios": "Lunes a viernes de 10 a 17 hs",
         # F4: mínimo de compra — las dos condiciones se validan en
         # services/carrito.estado_minimo(), nunca hardcodeadas.
         "minimo_compra_monto": "400000",

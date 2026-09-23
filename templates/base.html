@@ -67,7 +67,11 @@
       </div>
       <div>
         <strong>Email</strong>
-        <span><a href="mailto:comendadeco@gmail.com">comendadeco@gmail.com</a></span>
+        {% if contacto_email %}
+          <span><a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a></span>
+        {% else %}
+          <span class="footer-todo">TODO: cargar email de contacto</span>
+        {% endif %}
       </div>
       <div>
         <strong>Local</strong>
@@ -79,7 +83,11 @@
       </div>
       <div>
         <strong>Horarios</strong>
-        <span>Lunes a viernes de 10 a 17 hs</span>
+        {% if contacto_horarios %}
+          <span>{{ contacto_horarios }}</span>
+        {% else %}
+          <span class="footer-todo">TODO: cargar horarios de atención</span>
+        {% endif %}
       </div>
     </div>
   </footer>
