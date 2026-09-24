@@ -61,18 +61,34 @@
       {# data-nombre / data-skus: lo que mira el filtro en vivo. data-skus
          lleva los SKUs de TODAS las variantes de la card, no solo el del
          botón de agregar. #}
-      <div class="producto-card-mayorista{{ '' if unica else ' clickable' }}"
+      {# La ficha se pide al API por product_id, y NO todo producto lo tiene:
+         los cargados a mano en comenda-sistema (no vienen de TiendaNube)
+         llegan con product_id = None — se agrupan por SKU, ver
+         _agrupar_por_producto() allá — y el endpoint de detalle no los puede
+         buscar. Esos se renderizan SIN link: un url_for() con product_id
+         vacío tira BuildError y se lleva puesto el catálogo entero (pasó en
+         producción). El `if` va ANTES del url_for, no después. #}
+      {% set url_ficha = url_for('catalogo.producto_detalle', product_id=p.product_id) if p.product_id else none %}
+      <div class="producto-card-mayorista{{ ' con-ficha' if url_ficha }}"
            data-nombre="{{ p.nombre_base }}"
            data-skus="{{ p.variantes|map(attribute='sku')|reject('none')|join(' ') }}"
-           {% if not coincide[loop.index0] %}hidden{% endif %}
-           {% if not unica %}onclick="location.href='{{ url_for('catalogo.producto_detalle', product_id=p.product_id) }}'"{% endif %}>
-        {% if p.imagen_url %}
-          <img src="{{ p.imagen_url }}" class="imagen-principal" alt="{{ p.nombre_base }}" loading="lazy"
-               onerror="imgFallback(this)">
-        {% else %}
-          <div class="img-vacia"><i class="bi bi-image"></i></div>
-        {% endif %}
-        <div class="nombre">{{ p.nombre_base }}</div>
+           {% if not coincide[loop.index0] %}hidden{% endif %}>
+        {# Todas las cards que tienen ficha la abren (medidas y descripción),
+           con o sin variantes — pero solo desde imagen + nombre, con un <a>
+           real (foco con teclado, click del medio, menú contextual). NO toda
+           la card: en la card simple el selector de cantidad y "Agregar"
+           quedarían dentro del área de click y tocar "+" llevaría a la ficha.
+           Sin ficha, el mismo contenido va en un <div> con la misma clase,
+           para que la card mida exactamente lo mismo. #}
+        {% if url_ficha %}<a href="{{ url_ficha }}" class="card-link">{% else %}<div class="card-link">{% endif %}
+          {% if p.imagen_url %}
+            <img src="{{ p.imagen_url }}" class="imagen-principal" alt="{{ p.nombre_base }}" loading="lazy"
+                 onerror="imgFallback(this)">
+          {% else %}
+            <div class="img-vacia"><i class="bi bi-image"></i></div>
+          {% endif %}
+          <div class="nombre">{{ p.nombre_base }}</div>
+        {% if url_ficha %}</a>{% else %}</div>{% endif %}
         {% if unica %}
           {# C1: con una sola variante hay un único SKU válido para toda la
              card. Con varias, cada variante tiene el suyo — mostrar uno acá
@@ -115,9 +131,18 @@
             </div>
             <span class="mini-badge disp">{{ p.variantes|length }} opciones</span>
           </div>
-          <div class="btn-agregar-carrito btn-ver-opciones">
-            <i class="bi bi-grid"></i> Ver opciones
-          </div>
+          {% if url_ficha %}
+            <a href="{{ url_ficha }}" class="btn-agregar-carrito btn-ver-opciones">
+              <i class="bi bi-grid"></i> Ver opciones
+            </a>
+          {% else %}
+            {# Hoy no pasa (el API agrupa variantes por product_id, así que un
+               grupo con varias siempre lo trae), pero si pasara, la card se
+               muestra igual en vez de romper la página. #}
+            <span class="btn-agregar-carrito btn-ver-opciones" aria-disabled="true">
+              <i class="bi bi-grid"></i> Ver opciones
+            </span>
+          {% endif %}
         {% endif %}
       </div>
       {% endfor %}

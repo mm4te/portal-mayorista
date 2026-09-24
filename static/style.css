@@ -418,9 +418,20 @@ input:focus, textarea:focus, select:focus {
 /* El botón de agregar queda pegado al fondo aunque la card no tenga selector */
 .producto-card-mayorista .btn-agregar-carrito { margin-top: auto; }
 .producto-card-mayorista .mini-badge { align-self: flex-start; }
-/* Cards con más de una variante: toda la card navega al detalle */
-.producto-card-mayorista.clickable { cursor: pointer; }
-.producto-card-mayorista.clickable:hover { border-color: var(--primary); box-shadow: var(--shadow-hover); }
+/* Las cards con ficha (simples y con variantes) la abren desde imagen +
+   nombre (.card-link) — el hover de la card entera es la señal de que se
+   puede abrir, así que va solo en .con-ficha: una card sin product_id (ver
+   catalogo.html) se renderiza sin link y no tiene que prometer un click. */
+.producto-card-mayorista.con-ficha:hover { border-color: var(--primary); box-shadow: var(--shadow-hover); }
+/* El link no puede agregar caja propia: display:block + mismo color/sin
+   subrayado deja imagen y nombre exactamente donde estaban. */
+.card-link { display: block; color: inherit; }
+.card-link:hover { text-decoration: none; }
+.card-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--marca-radio);
+}
 
 /* .card-medio ya no necesita min-height propio: con .grilla-catalogo en
    grid-auto-rows:1fr + height:100% en la card, el grid empareja la altura
@@ -451,11 +462,17 @@ input:focus, textarea:focus, select:focus {
   color: var(--text-muted);
   margin-left: 2px;
 }
-/* "Ver opciones": mismo look que el botón de agregar pero no dispara su
-   propio click — el click lo maneja la card entera (onclick en el div padre). */
-.btn-ver-opciones {
-  margin-top: auto;
-  pointer-events: none;
+/* "Ver opciones": un <a> real a la ficha con el mismo look que el botón de
+   agregar (antes era un div sin click propio, dentro de una card con
+   onclick). */
+.btn-ver-opciones { margin-top: auto; }
+.btn-ver-opciones:hover { color: var(--marca-boton-texto); text-decoration: none; }
+.btn-ver-opciones:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+/* Red de seguridad: "Ver opciones" sin ficha a la que ir (hoy no ocurre). */
+.btn-ver-opciones[aria-disabled="true"] {
+  background: var(--marca-borde);
+  color: var(--marca-texto-suave);
+  cursor: default;
 }
 /* Solo la imagen principal del producto (NO las miniaturas de variante,
    que van dentro de .mini-variantes con su propio tamaño en .mini-thumb).
