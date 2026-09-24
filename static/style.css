@@ -382,6 +382,17 @@ input:focus, textarea:focus, select:focus {
   color: var(--text-muted);
   font-weight: 600;
 }
+.cat-buscador .clear-q:hover { color: var(--primary); text-decoration: none; }
+/* `hidden` lo pone el filtro en vivo (y el servidor cuando no hay JS) —
+   hace falta explícito porque el display de la card le gana al del UA. */
+.cat-buscador .clear-q[hidden],
+.producto-card-mayorista[hidden] { display: none; }
+.cat-resultados {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: -8px 0 14px;
+}
+#cat-sin-resultados { margin-bottom: 14px; }
 
 .grilla-catalogo {
   display: grid;

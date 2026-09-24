@@ -11,37 +11,60 @@
   <aside class="cat-sidebar">
     <h2 class="cat-sidebar-titulo">Categorías</h2>
     <nav class="cat-lista">
-      <a href="{{ url_for('catalogo.index', q=q or None) }}"
+      <a href="{{ url_for('catalogo.index', q=q or None) }}" data-cat-link
          class="cat-link {{ 'activa' if categoria_activa in ('', 'Todas') }}">Todas</a>
       {% for c in categorias %}
-        <a href="{{ url_for('catalogo.index', categoria=c, q=q or None) }}"
+        <a href="{{ url_for('catalogo.index', categoria=c, q=q or None) }}" data-cat-link
            class="cat-link {{ 'activa' if categoria_activa == c }}">{{ c }}</a>
       {% endfor %}
     </nav>
   </aside>
 
   <div class="catalogo-main">
-    <form method="GET" class="cat-buscador">
+    {# Sin JS, el form hace GET y filtra el servidor (routes/catalogo.py).
+       Con JS, el filtro en vivo de abajo intercepta el submit y es la única
+       fuente de verdad — ver el comentario en index() para el porqué. #}
+    <form method="GET" class="cat-buscador" id="cat-buscador" role="search">
       {% if categoria_activa not in ('', 'Todas') %}
         <input type="hidden" name="categoria" value="{{ categoria_activa }}">
       {% endif %}
       <i class="bi bi-search"></i>
-      <input type="text" name="q" value="{{ q }}" placeholder="Buscar producto...">
-      {% if q %}<a href="{{ url_for('catalogo.index', categoria=(categoria_activa if categoria_activa not in ('','Todas') else None)) }}" class="clear-q">✕</a>{% endif %}
+      <input type="text" name="q" id="cat-q" value="{{ q }}" placeholder="Buscar producto..."
+             autocomplete="off" aria-label="Buscar por nombre o SKU">
+      <a href="{{ url_for('catalogo.index', categoria=(categoria_activa if categoria_activa not in ('','Todas') else None)) }}"
+         class="clear-q" id="cat-clear-q" aria-label="Limpiar búsqueda" {% if not q %}hidden{% endif %}>✕</a>
     </form>
 
     {% if not error and not productos %}
       <div class="note">
         No hay productos
-        {% if categoria_activa not in ('', 'Todas') %}en «{{ categoria_activa }}»{% endif %}
-        {% if q %} para «{{ q }}»{% endif %}.
+        {% if categoria_activa not in ('', 'Todas') %}en «{{ categoria_activa }}»{% endif %}.
+      </div>
+    {% endif %}
+
+    {% if productos %}
+      <p class="cat-resultados" id="cat-resultados" aria-live="polite">
+        {%- if q -%}
+          {{ n_coinciden }} {{ 'resultado' if n_coinciden == 1 else 'resultados' }}
+        {%- else -%}
+          {{ productos|length }} {{ 'producto' if productos|length == 1 else 'productos' }}
+        {%- endif -%}
+      </p>
+      <div class="note" id="cat-sin-resultados" {% if not q or n_coinciden %}hidden{% endif %}>
+        No hay productos que coincidan con «<span id="cat-sin-resultados-q">{{ q }}</span>»{% if categoria_activa not in ('', 'Todas') %} en «{{ categoria_activa }}»{% endif %}.
       </div>
     {% endif %}
 
     <div class="grilla-catalogo">
       {% for p in productos %}
       {% set unica = p.variantes|length == 1 %}
+      {# data-nombre / data-skus: lo que mira el filtro en vivo. data-skus
+         lleva los SKUs de TODAS las variantes de la card, no solo el del
+         botón de agregar. #}
       <div class="producto-card-mayorista{{ '' if unica else ' clickable' }}"
+           data-nombre="{{ p.nombre_base }}"
+           data-skus="{{ p.variantes|map(attribute='sku')|reject('none')|join(' ') }}"
+           {% if not coincide[loop.index0] %}hidden{% endif %}
            {% if not unica %}onclick="location.href='{{ url_for('catalogo.producto_detalle', product_id=p.product_id) }}'"{% endif %}>
         {% if p.imagen_url %}
           <img src="{{ p.imagen_url }}" class="imagen-principal" alt="{{ p.nombre_base }}" loading="lazy"
@@ -105,6 +128,110 @@
 
 {% block scripts %}
 <script>
+  // ── Filtro en vivo del buscador ────────────────────────────────────────
+  // Filtra del lado del cliente sobre las cards que ya están en el DOM (las
+  // de la categoría seleccionada: el servidor ya recortó por categoría).
+  // OJO: depende de que el catálogo renderice TODOS los productos en una
+  // sola página. El día que haya paginación, este filtro deja de ver el
+  // resto del catálogo y la búsqueda tiene que moverse al servidor.
+  //
+  // Con JS, esto es la única fuente de verdad: al cargar se recalcula desde
+  // el valor del input (pisando el `hidden` que puso el servidor por ?q=),
+  // el submit del form no navega y la URL se mantiene en sync con
+  // replaceState. Sin JS, el form hace GET y filtra routes/catalogo.py.
+  (function () {
+    var form = document.getElementById('cat-buscador');
+    var input = document.getElementById('cat-q');
+    var limpiar = document.getElementById('cat-clear-q');
+    var contador = document.getElementById('cat-resultados');
+    var sinResultados = document.getElementById('cat-sin-resultados');
+    var sinResultadosQ = document.getElementById('cat-sin-resultados-q');
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.grilla-catalogo .producto-card-mayorista'));
+    var catLinks = document.querySelectorAll('[data-cat-link]');
+    if (!form || !input) return;
+
+    function normalizar(texto) {
+      return (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    }
+    function trozar(textoNormalizado) {
+      return textoNormalizado.split(/[^a-z0-9]+/).filter(Boolean);
+    }
+
+    // Se normaliza una sola vez por card, no en cada tecla.
+    var indice = cards.map(function (card) {
+      return {
+        card: card,
+        palabras: trozar(normalizar(card.dataset.nombre)),
+        skus: (card.dataset.skus || '').split(' ').filter(Boolean).map(normalizar)
+      };
+    });
+
+    // ESPEJO de _grupo_matchea() en routes/catalogo.py — misma regla:
+    // algún SKU de la card empieza con lo buscado, o cada palabra buscada
+    // es el comienzo de alguna palabra del nombre.
+    function coincide(item, qn, tokens) {
+      if (!qn) return true;
+      if (item.skus.some(function (s) { return s.indexOf(qn) === 0; })) return true;
+      return tokens.length > 0 && tokens.every(function (t) {
+        return item.palabras.some(function (w) { return w.indexOf(t) === 0; });
+      });
+    }
+
+    var anuncioTimer = null;
+    function filtrar() {
+      var q = input.value.trim();
+      var qn = normalizar(q);
+      var tokens = trozar(qn);
+      var visibles = 0;
+      indice.forEach(function (item) {
+        var ok = coincide(item, qn, tokens);
+        item.card.hidden = !ok;
+        if (ok) visibles++;
+      });
+
+      if (limpiar) limpiar.hidden = !input.value;
+      if (sinResultados) {
+        sinResultados.hidden = !(qn && visibles === 0);
+        sinResultadosQ.textContent = q;
+      }
+      // El aria-live se actualiza con un respiro: si cambiara en cada tecla,
+      // el lector de pantalla anunciaría (o cortaría) cada una.
+      if (contador) {
+        clearTimeout(anuncioTimer);
+        var texto = qn
+          ? visibles + (visibles === 1 ? ' resultado' : ' resultados')
+          : cards.length + (cards.length === 1 ? ' producto' : ' productos');
+        anuncioTimer = setTimeout(function () { contador.textContent = texto; }, 250);
+      }
+      sincronizarUrl(q);
+    }
+
+    // ?q= en la URL y en los links de categoría: recargar, volver desde la
+    // ficha o cambiar de categoría conservan la búsqueda.
+    function conQ(href, q) {
+      var url = new URL(href, location.href);
+      if (q) url.searchParams.set('q', q); else url.searchParams.delete('q');
+      return url.pathname + url.search + url.hash;
+    }
+    function sincronizarUrl(q) {
+      history.replaceState(history.state, '', conQ(location.href, q));
+      Array.prototype.forEach.call(catLinks, function (a) { a.setAttribute('href', conQ(a.href, q)); });
+    }
+
+    input.addEventListener('input', filtrar);
+    form.addEventListener('submit', function (e) { e.preventDefault(); filtrar(); });
+    if (limpiar) {
+      limpiar.addEventListener('click', function (e) {
+        e.preventDefault();
+        input.value = '';
+        filtrar();
+        input.focus();
+      });
+    }
+
+    filtrar();
+  })();
+
   function getCsrfToken() {
     var m = document.querySelector('meta[name="csrf-token"]');
     return m ? m.getAttribute('content') : '';

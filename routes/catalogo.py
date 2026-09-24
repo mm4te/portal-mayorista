@@ -1,5 +1,7 @@
 # routes/catalogo.py — catálogo mayorista (consume la API interna de comenda-sistema)
 import logging
+import re
+import unicodedata
 
 from flask import Blueprint, render_template, request, g, abort
 
@@ -12,12 +14,30 @@ logger = logging.getLogger(__name__)
 catalogo_bp = Blueprint("catalogo", __name__)
 
 
-def _grupo_matchea(p, ql):
-    """Búsqueda a nivel de grupo: alcanza con que matchee el nombre base o
-    el SKU de CUALQUIERA de sus variantes."""
-    if ql in (p.get("nombre_base") or "").lower():
+def _normalizar(texto):
+    """Minúsculas y sin diacríticos: "Almohadón" y "Almohadon" tienen que
+    ser la misma palabra (el catálogo tiene las dos grafías)."""
+    descompuesto = unicodedata.normalize("NFD", texto or "")
+    return "".join(ch for ch in descompuesto if not unicodedata.combining(ch)).lower()
+
+
+def _grupo_matchea(p, q):
+    """Búsqueda a nivel de grupo (una card). Matchea si:
+      · el SKU de CUALQUIERA de sus variantes empieza con lo buscado, o
+      · cada palabra buscada es el comienzo de alguna palabra del nombre
+        ("knot" → "Almohadón Knot"; "alm kn" también).
+
+    ESPEJO de coincide() en templates/catalogo.html — si se cambia una, se
+    cambia la otra. Con JS manda la del cliente (ver index()); esta es la
+    que ve quien navega sin JS."""
+    qn = _normalizar(q).strip()
+    if not qn:
         return True
-    return any(ql in (v.get("sku") or "").lower() for v in p.get("variantes", []))
+    if any(_normalizar(v.get("sku")).startswith(qn) for v in p.get("variantes", [])):
+        return True
+    palabras = [w for w in re.split(r"[^a-z0-9]+", _normalizar(p.get("nombre_base"))) if w]
+    tokens = [t for t in re.split(r"[^a-z0-9]+", qn) if t]
+    return bool(tokens) and all(any(w.startswith(t) for w in palabras) for t in tokens)
 
 
 @catalogo_bp.route("/catalogo")
@@ -54,13 +74,23 @@ def index():
         # es un array) — alcanza con que matchee cualquiera de ellas.
         productos = [p for p in productos if categoria in (p.get("categorias") or [])]
 
-    if q:
-        ql = q.lower()
-        productos = [p for p in productos if _grupo_matchea(p, ql)]
+    # La búsqueda por texto NO saca productos de la lista: se renderizan
+    # todos los de la categoría y los que no matchean van con `hidden`.
+    # Una sola fuente de verdad según haya JS o no:
+    #   · sin JS → manda este `hidden`, calculado acá (el form hace GET).
+    #   · con JS → el filtro en vivo de catalogo.html recalcula todo al
+    #     cargar a partir del valor del input, así que ?q= en la URL nunca
+    #     deja la grilla recortada: borrar letras vuelve a mostrar lo que el
+    #     servidor habría filtrado, porque sigue estando en el DOM.
+    # OJO: esto depende de que el catálogo renderice TODOS los productos en
+    # una sola página. Si algún día se pagina, el filtro del cliente deja de
+    # ver el resto del catálogo y la búsqueda tiene que volver al servidor.
+    coincide = [_grupo_matchea(p, q) for p in productos]
 
     return render_template(
         "catalogo.html",
-        productos=productos, categorias=categorias,
+        productos=productos, coincide=coincide, n_coinciden=sum(coincide),
+        categorias=categorias,
         categoria_activa=categoria or "Todas", q=q, error=error, cliente=g.cliente,
     )
 
